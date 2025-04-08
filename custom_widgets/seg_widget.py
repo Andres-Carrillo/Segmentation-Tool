@@ -1,6 +1,6 @@
 from PyQt5.QtCore import  QThread, pyqtSignal, Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap, QColor
-from PyQt5.QtWidgets import QVBoxLayout, QWidget, QLabel, QHBoxLayout,QGridLayout,  QComboBox,QCheckBox,QFileDialog,QPushButton
+from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout,QGridLayout,QComboBox,QFileDialog,QPushButton
 import cv2 as cv
 from utils import qimage_to_cv_image,cv_image_to_qimage
 from custom_widgets.color_wheel_widget import ColorSpaceWidget
@@ -40,7 +40,6 @@ class SaveImageWorker(QThread):
         
         self.saved.emit()
 
-   
     def save(self,image,save_path):
         cv.imwrite(save_path,image)
 
@@ -66,7 +65,6 @@ class SaveImageWorker(QThread):
         self.data = None
         self.stop = True
         self.wait()
-
 
 class BaseWorker(QThread):
     processed = pyqtSignal(QImage)
@@ -294,9 +292,35 @@ class SegmentationToolWidget(QWidget):
             self.worker.color_space = cv.COLOR_BGR2YCrCb
             self.camera_feed.worker.color_space = cv.COLOR_BGR2YCrCb 
 
-
     def show_binary_mask(self):
         print("Showing binary mask")
+
+class OutputWidget(QWidget):
+    def __init__(self,parent):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Output Widget")
+        
+        self.canvas = QPixmap(640, 510)
+        self.label = QLabel(parent=self)
+
+        self.canvas.fill(Qt.black)
+        self.label.setPixmap(self.canvas)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setScaledContents(True)
+        self.mask_mode = QComboBox(self)
+        self.mask_mode.addItem("Binary Mask")
+        self.mask_mode.addItem("Overlay Mask")
+
+        self.save_masks = QPushButton("Save Masks",clicked=self.parent().save_mask)
+
+        layout = QGridLayout()
+        layout.addWidget(self.label, 0, 0)
+        layout.addWidget(self.mask_mode, 1, 0)
+        layout.addWidget(self.save_masks, 2, 0)
+        self.setLayout(layout)
 
 class SegmentationWidget(QWidget):
     def __init__(self):
@@ -306,30 +330,20 @@ class SegmentationWidget(QWidget):
 
     def init_ui(self):
         self.camera_feed = VideoWidget(0)
-        self.canvas = QPixmap(640, 480)
-        self.label = QLabel()
+        self.results_widget = OutputWidget(self)
         container = QGridLayout()
         options_layout = QHBoxLayout()
         layout = QHBoxLayout()
-        result_layout = QVBoxLayout()
-        output_options_layout = QHBoxLayout()
         self.seg_tools = SegmentationToolWidget(parent=self)
         self.class_list_widget = ClassListWidget(parent=self)
-        self.overlay_mask =  QPushButton("Overlay Mask",clicked=self.show_mask_overlay)
-        self.save_masks = QCheckBox("Save Masks",stateChanged=self.save_mask)
         self.color_spaces = QComboBox()
 
         self.setWindowTitle("Segmentation Widget")
         
-        self.camera_feed.image_label.setFixedSize(640, 480)
+        self.camera_feed.image_label.setFixedSize(640, 510)
         self.camera_feed.image_label.setScaledContents(True)
         self.camera_feed.image_label.setStyleSheet("background-color: black")
-        self.class_list_widget.setFixedSize(200,500)
-
-        self.canvas.fill(Qt.black)
-               
-        self.label.setPixmap(self.canvas)
-        self.label.setAlignment(Qt.AlignCenter)
+        self.class_list_widget.setFixedSize(100,600)
 
         # ==================== connect signals to slots ========================
             # connect the color space combo box to the change color space slot
@@ -337,18 +351,19 @@ class SegmentationWidget(QWidget):
         self.seg_tools.color_space.first_channel_slider.value_changed.connect(self.update_bounds)
         self.seg_tools.color_space.second_channel_slider.value_changed.connect(self.update_bounds)
         self.seg_tools.color_space.third_channel_slider.value_changed.connect(self.update_bounds)
-            # connect the class list widget to the add segmentation class slot
+
+        # connect the class list widget to the add segmentation class slot
         self.class_list_widget.class_added.connect(self.add_segmentation_class)
-            # connect the class list widget to the edit segmentation class slot
+        # connect the class list widget to the edit segmentation class slot
         self.class_list_widget.class_edited.connect(self.edit_segmentation_class)
-            # connect the class list widget to the remove segmentation class slot
+        # connect the class list widget to the remove segmentation class slot
         self.class_list_widget.class_removed.connect(self.remove_segmentation_class)
-            # connect the camera feed to the process slot
+        
+        # connect the camera feed to the process slot
         self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
 
-        
             # Connect save masks option to save mask function
-        self.save_masks.stateChanged.connect(self.save_mask)
+        # self.save_masks.stateChanged.connect(self.save_mask)
             # Connect overlay mask option to show binary mask function
         # self.overlay_mask.stateChanged.connect(self.show_mask_overlay)
 
@@ -361,12 +376,7 @@ class SegmentationWidget(QWidget):
         self.color_spaces.addItem("YCrCb",cv.COLOR_BGR2YCrCb)
 
         # ==================== layout ========================
-        output_options_layout.addWidget(self.overlay_mask)
-        output_options_layout.addWidget(self.save_masks)
         options_layout.addWidget(self.color_spaces)
-
-        result_layout.addWidget(self.label)
-        result_layout.addLayout(output_options_layout)
 
         container.addWidget(self.seg_tools,0,0)
         container.addLayout(options_layout,1,0)
@@ -374,7 +384,7 @@ class SegmentationWidget(QWidget):
         layout.addLayout(container)
         layout.addWidget(self.class_list_widget)
         layout.addWidget(self.camera_feed)
-        layout.addLayout(result_layout)
+        layout.addWidget(self.results_widget)
         
         self.setLayout(layout)
         
@@ -440,16 +450,17 @@ class SegmentationWidget(QWidget):
 
             qimage_to_cv_image(image)
             pixmap = QPixmap.fromImage(image)
-            self.label.setPixmap(pixmap)
+            self.results_widget.label.setPixmap(pixmap)
+            self.results_widget.label.setScaledContents(True)
         except Exception as e:
             if image.format() != QImage.Format_Invalid:
                 print("Unknown error exception",e)
 
     @pyqtSlot(str,QColor)
     def add_segmentation_class(self,class_name,color):
-        top_channel_range = self.seg_tools.color_space.first_channel_slider.get_range()#self.seg_tools.color_wheel.first_channel_slider.get_range() 
-        second_channel_range = self.seg_tools.color_space.second_channel_slider.get_range()#self.seg_tools.color_wheel.second_channel_slider.get_range()
-        third_channel_range = self.seg_tools.color_space.third_channel_slider.get_range()#self.seg_tools.color_wheel.third_channel_slider.get_range()
+        top_channel_range = self.seg_tools.color_space.first_channel_slider.get_range()
+        second_channel_range = self.seg_tools.color_space.second_channel_slider.get_range()
+        third_channel_range = self.seg_tools.color_space.third_channel_slider.get_range()
 
         lower_bounds = (top_channel_range[0],second_channel_range[0],third_channel_range[0])
         
