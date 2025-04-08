@@ -26,8 +26,6 @@ class  ClassListWidget(QWidget):
         self.list_widget.itemClicked.connect(self.item_clicked)
         self.list_widget.itemDoubleClicked.connect(self.remove_item)
 
-
-
         self.setSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding

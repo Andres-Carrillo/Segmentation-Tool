@@ -177,7 +177,7 @@ class ColorSpaceWidget(QWidget):
         self.first_channel_slider.value_changed.connect(self.update_plot)
         self.second_channel_slider.value_changed.connect(self.update_plot)
         self.third_channel_slider.value_changed.connect(self.update_plot)
-
+    
     def _set_slider_titles(self,color_space):
         if color_space == "RGB":
             self.first_channel_slider.title = "Red"

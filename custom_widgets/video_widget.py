@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget,QLabel,QHBoxLayout,QComboBox,QFileDialog
+from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QComboBox, QFileDialog, QGridLayout
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
 from PyQt5.QtGui import QImage
@@ -119,6 +119,7 @@ class VideoWidget(QWidget):
 
     def init_ui(self):
         self.image_label = QLabel()
+        # self.image_label.setFixedSize(640, 480)
         self.play_button =  QPushButton("Play",clicked=self.toggle_play)
         self.recorder_button = QPushButton("Record",clicked=self.toggle_record)
 
@@ -128,14 +129,12 @@ class VideoWidget(QWidget):
         self.video_source.currentIndexChanged.connect(self.change_video_source)
 
         self.image_label.setAlignment(Qt.AlignCenter)
-        main_layout = QVBoxLayout()
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.play_button)
-        button_layout.addWidget(self.recorder_button)
-        button_layout.addWidget(self.video_source)
-        main_layout.addWidget(self.image_label)
-        # need to add Horizontal layout for buttons
-        main_layout.addLayout(button_layout)
+        main_layout = QGridLayout()
+    
+        main_layout.addWidget(self.image_label,0,0)
+        main_layout.addWidget(self.video_source,1,0)
+        main_layout.addWidget(self.play_button,2,0,1,1)
+    
         self.setLayout(main_layout)
 
     def init_worker(self):
