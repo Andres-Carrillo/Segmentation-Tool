@@ -1,7 +1,6 @@
-from PyQt5.QtWidgets import ( QWidget,QGridLayout,QVBoxLayout,QStackedLayout)
+from PyQt5.QtWidgets import ( QWidget,QVBoxLayout,QStackedLayout)
 from PyQt5.QtCore import QThread, pyqtSignal,QTimer
 from PyQt5 import QtWidgets
-from PyQt5 import QtCore, QtGui
 import numpy as np
 from utils import generate_subsample_rgb_colors,string_to_cv_color_space
 from custom_widgets.range_widget import RangeSlider

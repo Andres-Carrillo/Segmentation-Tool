@@ -1,9 +1,6 @@
-from PyQt5.QtWidgets import (QWidget, QPushButton, QColorDialog, QSlider, QInputDialog, QLabel, QVBoxLayout, QGridLayout, QListWidget, QMessageBox)
-from PyQt5.QtCore import Qt, pyqtSignal, QObject
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 from PyQt5 import QtCore, QtGui, QtWidgets
 from utils import in_bounds, clip_value
-from random import randint
 
 class Slider(QtWidgets.QWidget):
     value_changed = QtCore.pyqtSignal()
