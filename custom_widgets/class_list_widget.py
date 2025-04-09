@@ -64,3 +64,10 @@ class  ClassListWidget(QWidget):
             self.list_widget.takeItem(self.list_widget.row(i))
 
         self.class_removed.emit(self.list_widget.row(i))
+    
+    def import_classes(self,classes):
+        self.list_widget.clear()
+        for class_name,color in classes:
+            item = QtWidgets.QListWidgetItem(class_name)
+            item.setBackground(QColor(color))
+            self.list_widget.addItem(item)
