@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import ( QWidget,QGridLayout,QVBoxLayout)
+from PyQt5.QtWidgets import ( QWidget,QGridLayout,QVBoxLayout,QStackedLayout)
 from PyQt5.QtCore import QThread, pyqtSignal,QTimer
 from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtGui
 import numpy as np
 from utils import generate_subsample_rgb_colors,string_to_cv_color_space
 from custom_widgets.range_widget import RangeSlider
@@ -63,13 +64,14 @@ class ColorSpacePlot(FigureCanvasQTAgg):
         
         # Create 3D plot
         self.ax.scatter(c1, c2, c3, c=colors, marker='o')
-
+        
+        # Set labels
         self.ax.set_axis_off()
         self.ax.set_facecolor("None")
         self.ax.disable_mouse_rotation()
         self.ax.set_box_aspect([1,1,1])
         fig.set_facecolor("None")
-        
+
         super().__init__(fig)
 
         self.setParent(parent) 
@@ -83,12 +85,14 @@ class ColorSpacePlot(FigureCanvasQTAgg):
             self.ax.cla()
             self.ax.scatter(c1,c2, c3, c=colors, marker='o')
             self.ax.set_axis_off()
+            self.ax.set_box_aspect([1,1,1])
             self.ax.set_facecolor("None")
 
             eval,azim,roll = self._calc_rotation()
             self.ax.view_init(elev=eval, azim=azim, roll=roll)
             
             self.draw()
+
     def _tick(self):
         self.angle += 1
         if self.angle > 360:
@@ -142,9 +146,9 @@ class ColorSpaceWidget(QWidget):
         self.plot = ColorSpacePlot(parent=self)
         self._init_worker()
             
-        self.first_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self,x_offset=int(self.width()/12))
-        self.second_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self,x_offset=int(self.width()/12))
-        self.third_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self,x_offset=int(self.width()/12))
+        self.first_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self)
+        self.second_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self)
+        self.third_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self)
 
         self._set_slider_titles("RGB")
         self._init_layout()
@@ -161,17 +165,38 @@ class ColorSpaceWidget(QWidget):
         self.color_space = self.plot_thread.color_space
 
     def _init_layout(self):
-        grid = QGridLayout()
+        # stacked layout
+        # to hold the plot and the sliders
+        stack = QStackedLayout()
+        
+        #layout for the sliders
         channel_layout = QVBoxLayout()
 
+        # widget to hold the sliders
+        # this is needed to since stacked layout only works with widgets
+        slider_widget = QWidget()
+        
+        #layout for the sliders
         channel_layout.addWidget(self.first_channel_slider)
         channel_layout.addWidget(self.second_channel_slider)
         channel_layout.addWidget(self.third_channel_slider)
         
-        grid.setSpacing(200)
-        grid.addLayout(channel_layout, 0, 0, 3, 1)
-        grid.addWidget(self.plot, 0, 1, 3, 1)
-        self.setLayout(grid)
+        #set the layout for the slider widget
+        # which contains the sliders
+        slider_widget.setLayout(channel_layout)
+        
+        # set stack mode so that all widgets are shown at once
+        stack.setStackingMode(QStackedLayout.StackAll)
+        
+        # add the plot and the sliders to the stack
+        stack.addWidget(self.plot)
+        stack.addWidget(slider_widget)
+
+        # set the size constraint for the stack
+        stack.setSizeConstraint(QStackedLayout.SetMinimumSize)
+
+        # set the layout for the widget
+        self.setLayout(stack)
 
     def _init_events(self):
         self.first_channel_slider.value_changed.connect(self.update_plot)
