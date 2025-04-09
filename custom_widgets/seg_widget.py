@@ -337,7 +337,7 @@ class OutputWidget(QWidget):
         layout.addWidget(self.label, 0, 0)
         layout.addWidget(self.mask_mode, 1, 0)
         layout.addWidget(self.save_masks, 2, 0)
-        
+
         self.setLayout(layout)
 
 class SegmentationWidget(QWidget):
@@ -481,6 +481,9 @@ class SegmentationWidget(QWidget):
         new_class = SegmentationClass(class_name,color,lower_bounds,upper_bounds,self.worker.color_space)
         
         self.worker.class_list.append(new_class)
+
+        if self.results_widget.saving_masks:
+            self._save_class_list()
     
     @pyqtSlot(str,QColor,int)
     def edit_segmentation_class(self,class_name,color,index):
