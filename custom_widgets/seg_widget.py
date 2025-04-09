@@ -1,3 +1,4 @@
+import json
 from PyQt5.QtCore import  QThread, pyqtSignal, Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout,QGridLayout,QComboBox,QFileDialog,QPushButton
@@ -132,7 +133,8 @@ class SegmentationWorker(BaseWorker):
             data = cv_image_to_qimage(output)
 
             if self.saving_masks:
-                self.save_worker.add_to_save_queue(data, f"frame_{self.frame_count}_masks.png")
+                sanatized_data = self._remove_white_pixels(data)
+                self.save_worker.add_to_save_queue(sanatized_data, f"frame_{self.frame_count}_masks.png")
                 self.frame_count += 1
                 self.save_worker.run()
 
@@ -247,6 +249,20 @@ class SegmentationWorker(BaseWorker):
     def set_mask(self, mask):
         self.mask = mask
 
+    def _remove_white_pixels(self,image):
+        """
+        Removes white pixels from the image, this used for saving the image.
+        White pixesl represent an unasigned class. So until the user is sure of the class and adds it to the class list
+        the white pixels are removed and replaced with black pixels.
+        """
+        data = image.bits()
+        data.setsize(image.byteCount())
+        arr = np.array(data).reshape((image.height(), image.width(), 3))
+
+        arr[np.where(arr == 255)] = 0
+
+        return cv_image_to_qimage(arr)
+
 class SegmentationToolWidget(QWidget):
 
     def __init__(self,parent=None,color_space = 0):
@@ -298,6 +314,7 @@ class SegmentationToolWidget(QWidget):
 class OutputWidget(QWidget):
     def __init__(self,parent):
         super().__init__(parent)
+        self.saving_masks = False
         self.init_ui()
 
     def init_ui(self):
@@ -320,6 +337,7 @@ class OutputWidget(QWidget):
         layout.addWidget(self.label, 0, 0)
         layout.addWidget(self.mask_mode, 1, 0)
         layout.addWidget(self.save_masks, 2, 0)
+        
         self.setLayout(layout)
 
 class SegmentationWidget(QWidget):
@@ -334,6 +352,7 @@ class SegmentationWidget(QWidget):
         container = QGridLayout()
         options_layout = QHBoxLayout()
         layout = QHBoxLayout()
+
         self.seg_tools = SegmentationToolWidget(parent=self)
         self.class_list_widget = ClassListWidget(parent=self)
         self.color_spaces = QComboBox()
@@ -362,9 +381,6 @@ class SegmentationWidget(QWidget):
         # connect the camera feed to the process slot
         self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
 
-            # Connect save masks option to save mask function
-        # self.save_masks.stateChanged.connect(self.save_mask)
-            # Connect overlay mask option to show binary mask function
         # self.overlay_mask.stateChanged.connect(self.show_mask_overlay)
 
         # ==================== add items to the color space combo box ========================
@@ -443,11 +459,7 @@ class SegmentationWidget(QWidget):
 
     @pyqtSlot(QImage)
     def update_image(self, image):
-        try:
-            if self.worker.saving_masks:
-                self.worker.save_worker.add_to_save_queue(image, f"frame_{self.worker.frame_count}_masks.png")
-                self.worker.frame_count += 1   
-
+        try: 
             qimage_to_cv_image(image)
             pixmap = QPixmap.fromImage(image)
             self.results_widget.label.setPixmap(pixmap)
@@ -475,21 +487,45 @@ class SegmentationWidget(QWidget):
         self.worker.class_list[index].name = class_name
         self.worker.class_list[index].color = color
 
+        if self.results_widget.saving_masks:
+            self._save_class_list()
+
     @pyqtSlot(int)
     def remove_segmentation_class(self,index):
         self.worker.class_list.pop(index)
 
     @pyqtSlot()
     def save_mask(self):
-        if self.save_masks.isChecked() and not self.worker.saving_masks:
+        self.results_widget.saving_masks = not self.results_widget.saving_masks
+        if self.results_widget.saving_masks:
             if self.worker.save_worker.save_path is None:
                 directory = QFileDialog.getExistingDirectory(self, "Select Save Directory")
                 self.worker.toggle_saving_mask(directory)
-
-        if not self.save_masks.isChecked() and self.worker.saving_masks:
+                self._save_class_list()
+        else:
             self.worker.save_worker.stop = True
 
     @pyqtSlot()
     def show_mask_overlay(self):
         print("Showing mask overlay")
         self.worker.binary_mode = not self.worker.binary_mode
+
+
+    def _save_class_list(self):
+        file_name = "class_lists/classes.json" #QFileDialog.getSaveFileName(self, "Save Class List", "", "JSON Files (*.json)")
+        print("Saving class list to",file_name)
+        # if file_name[0]:
+        with open(file_name, 'w') as f:
+            class_list = []
+            for i,segmentation_class in enumerate(self.worker.class_list):
+                class_list.append({
+                    "name": segmentation_class.name,
+                    "id": i,
+                    "color_space": segmentation_class.color_space,
+                    "color": segmentation_class.color.name(),
+                    "lower_bound": segmentation_class.lower_bound,
+                    "upper_bound": segmentation_class.upper_bound
+                })
+            f.write(json.dumps(class_list, indent=4))
+
+        f.close()
