@@ -129,11 +129,17 @@ class SegmentationWorker(BaseWorker):
                 output = self.run_binary_mode(rgb_image)
             else:
                 output = self.run_overaly_mode(rgb_image)
-
+                    
             data = cv_image_to_qimage(output)
 
             if self.saving_masks:
-                sanatized_data = self._remove_white_pixels(data)
+                # if in binary mode simply remove the white pixels
+                if self.binary_mode:
+                    sanatized_data = self._remove_white_pixels(data)
+                else:# if in overlay mode need to create a binary mask then remove the white pixels
+                    binary_masks = self.run_binary_mode(rgb_image)
+                    sanatized_data = self._remove_white_pixels(cv_image_to_qimage(binary_masks))
+                
                 self.save_worker.add_to_save_queue(sanatized_data, f"frame_{self.frame_count}_masks.png")
                 self.frame_count += 1
                 self.save_worker.run()
@@ -160,20 +166,18 @@ class SegmentationWorker(BaseWorker):
         rgba_image = cv.cvtColor(rgb_image, cv.COLOR_BGR2BGRA)
         mask = self.base_segmentation(rgb_image)
 
-        rgba_image[np.where(mask == 255)] = (255,255,255,175)
-
-        output = cv.bitwise_and(rgb_image, rgb_image, mask=mask[:,:,0])
+        rgba_image[mask[:,:,0] == 255] = (255,255,255,150)
         
         for segmentation_class in self.class_list:
             converted_image = cv.cvtColor(rgb_image, segmentation_class.color_space)
 
             temp_mask = cv.inRange(converted_image, segmentation_class.lower_bound, segmentation_class.upper_bound)
             color = segmentation_class.color.getRgb()[:3]
-            color.append(175)
+            rgba_color = (color[0], color[1], color[2], 150)
 
-            rgba_image[np.where(temp_mask == 255)] = color
+            rgba_image[temp_mask == 255] = rgba_color
         
-        output = cv.cvtColor(output, cv.COLOR_BGRA2BGR)
+        output = cv.cvtColor(rgba_image, cv.COLOR_RGBA2BGR)
 
         return output
     
@@ -328,8 +332,11 @@ class OutputWidget(QWidget):
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setScaledContents(True)
         self.mask_mode = QComboBox(self)
+
         self.mask_mode.addItem("Binary Mask")
         self.mask_mode.addItem("Overlay Mask")
+
+        self.mask_mode.currentIndexChanged.connect(self.parent().toggle_mask_mode)
 
         self.save_masks = QPushButton("Save Masks",clicked=self.parent().save_mask)
 
@@ -381,6 +388,7 @@ class SegmentationWidget(QWidget):
         # connect the camera feed to the process slot
         self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
 
+        # self.
         # self.overlay_mask.stateChanged.connect(self.show_mask_overlay)
 
         # ==================== add items to the color space combo box ========================
@@ -509,15 +517,12 @@ class SegmentationWidget(QWidget):
             self.worker.save_worker.stop = True
 
     @pyqtSlot()
-    def show_mask_overlay(self):
-        print("Showing mask overlay")
+    def toggle_mask_mode(self):
         self.worker.binary_mode = not self.worker.binary_mode
 
 
     def _save_class_list(self):
         file_name = "class_lists/classes.json" #QFileDialog.getSaveFileName(self, "Save Class List", "", "JSON Files (*.json)")
-        print("Saving class list to",file_name)
-        # if file_name[0]:
         with open(file_name, 'w') as f:
             class_list = []
             for i,segmentation_class in enumerate(self.worker.class_list):
