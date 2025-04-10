@@ -1,38 +1,12 @@
-# from camera import CameraWorker
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget,QLabel,QImage
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt,QThread, pyqtSignal
+from custom_workers.camera_worker import CameraWorker
 from utils import qlabel_to_cv_image
 from utils import cv_image_to_qlabel
 import cv2 as cv
 
-class CameraWorker(QThread):
-    image = pyqtSignal(QImage)
 
-    def __init__(self, camera_index=0):
-        super().__init__()
-        self.camera_index = camera_index
-        self.running = False
-
-    def run(self):
-        self.running = True
-        capture = cv.VideoCapture(self.camera_index)
-        while self.running:
-            print("running")
-            ret, frame = capture.read()
-
-            if ret:
-                rgb_image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-                qt_image = cv_image_to_qlabel(rgb_image)
-                self.image.emit(qt_image)
-            
-            else:
-                break
-        capture.release()
-
-    def stop(self):
-        self.running = False
-        self.wait()
 
 class CameraWidget(QWidget):
     running = False
@@ -73,5 +47,3 @@ class CameraWidget(QWidget):
         self.camera_worker.stop()
         event.accept()
         CameraWidget.running = False
-
-

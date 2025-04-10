@@ -291,3 +291,46 @@ def calculate_number_of_combinations(step=16,r_range=(0,256),g_range=(0,256),b_r
     length_of_product = reduce(mul,(len(range(r_range[0], r_range[1], step)), len(range(g_range[0], g_range[1], step)), len(range(b_range[0], b_range[1], step))), 1)
     
     return length_of_product
+
+
+def _normalize_range(range):
+    min = range[0]
+    max = range[1]
+
+    if min == max:
+        max = min + 1
+
+    normalized_range = (min, max)
+    
+    return normalized_range
+
+def get_colors_and_componets(color_space,c1_range = (0,256),c2_range = (0,256),c3_range = (0,256)):
+        
+        # normalize the ranges so that there is no zero range
+        normalized_top_range = _normalize_range(c1_range)
+        normalized_middle_range = _normalize_range(c2_range)
+        normalized_bottom_range = _normalize_range(c3_range)
+
+        permutations_array = np.array(generate_subsample_rgb_colors(r_range=normalized_top_range,g_range=normalized_middle_range,b_range=normalized_bottom_range))
+
+        c1,c2,c3,colors = convert_colors_to_colorspace(permutations_array,color_space)
+
+        return c1,c2,c3,colors
+    
+def convert_colors_to_colorspace(colors,color_space='RGB'):
+        if color_space == 'RGB':
+            return colors[:,0]/255.0,colors[:,1]/255.0,colors[:,2]/255.0,colors/255.0
+        
+        cv2_color_space = string_to_cv_color_space(color_space)
+        # reshaping colors area for used by the cv2 function
+        reshaped_colors = np.uint8(colors.reshape(-1,1,3))
+
+        converted_colors = cv2.cvtColor(reshaped_colors, cv2_color_space)
+
+        converted_colors = converted_colors.reshape(-1,3)/255.0
+
+        c1 = converted_colors[:, 0]/255.0
+        c2 = converted_colors[:, 1]/255.0
+        c3 = converted_colors[:, 2]/255.0
+
+        return c1,c2,c3,converted_colors
