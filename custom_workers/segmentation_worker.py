@@ -4,7 +4,6 @@ import cv2 as cv
 from utils import qimage_to_cv_image,cv_image_to_qimage
 import numpy as np
 
-
 class ImageBlob():
     def __init__(self, image, save_path):
         self.image = image
@@ -112,7 +111,6 @@ class SegmentationWorker(BaseWorker):
         self.erode_kernel_size = 3
         self.dilate_kernel_size = 3
 
-
         self._init_worker()
 
     def _init_worker(self):
@@ -218,6 +216,14 @@ class SegmentationWorker(BaseWorker):
 
         mask = cv.inRange(converted_image, segmentation_class.lower_bound, segmentation_class.upper_bound)
 
+        if self.erode:
+            kernel = np.ones((self.erode_kernel_size, self.erode_kernel_size), np.uint8)
+            mask = cv.erode(mask, kernel, iterations=self.erode_iterations)
+
+        if self.dilate:
+            kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
+            mask = cv.dilate(mask, kernel, iterations=self.dilate_iterations)
+
         base_mask[np.where(mask == 255)] = segmentation_class.color.getRgb()[:3]
 
         return base_mask
@@ -284,5 +290,3 @@ class SegmentationWorker(BaseWorker):
         arr[np.where(arr == 255)] = 0
 
         return cv_image_to_qimage(arr)
-
-
