@@ -198,6 +198,24 @@ def in_bounds(x, y, start_x,start_y,width, height):
     return start_x <= x < start_x + width and start_y <= y < start_y + height
 
 
+
+def in_circle(x, y, center_x, center_y, radius):
+    """
+    Checks if a point is within a circle.
+
+    Args:
+        x (int): The x-coordinate.
+        y (int): The y-coordinate.
+        center_x (int): The x-coordinate of the circle's center.
+        center_y (int): The y-coordinate of the circle's center.
+        radius (int): The radius of the circle.
+
+    Returns:
+        bool: True if the point is within the circle, False otherwise.
+    """
+    return (x - center_x) ** 2 + (y - center_y) ** 2 <= radius ** 2
+
+
 def clip_value(value, min_value, max_value):
     """
     Clips a value to a range.
@@ -334,3 +352,42 @@ def convert_colors_to_colorspace(colors,color_space='RGB'):
         c3 = converted_colors[:, 2]/255.0
 
         return c1,c2,c3,converted_colors
+
+
+
+def calculate_angle_between(point1,point2):
+    """
+    Calculate the angle between two points with respect to the center point.
+
+    Args:
+        center (tuple): The center point (x, y).
+        point1 (tuple): The first point (x, y).
+
+    Returns:
+        float: The angle in degrees.
+    """
+    delta_x = point2[0] - point1[0]
+    delta_y = point2[1] - point1[1]
+
+    angle = np.arctan2(delta_y, delta_x) * 180 / np.pi
+
+    return angle
+
+
+def calculate_point_along_arc(center, radius, angle):
+    """
+    Calculate the point along an arc given the center, radius, and angle.
+
+    Args:
+        center (tuple): The center point (x, y).
+        radius (int): The radius of the arc.
+        angle (float): The angle in degrees.
+
+    Returns:
+        tuple: The point along the arc (x, y).
+    """
+    angle_rad = np.deg2rad(angle)
+    x = int(center[0] + radius * np.cos(angle_rad))
+    y = int(center[1] + radius * np.sin(angle_rad))
+
+    return x, y
