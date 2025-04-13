@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QWidget)
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPainter, QPen, QColor, QBrush
-from utils import calculate_angle_between,calculate_point_along_arc,in_circle,convert_angle_to_360,convert_angle_to_counter_clockwise
+from utils import calculate_angle_between,calculate_point_along_arc,in_circle,convert_angle_to_360,convert_angle_to_counter_clockwise,flip_angle
 
 
 class Gauge(QWidget):
@@ -53,12 +53,13 @@ class Gauge(QWidget):
         #draw the filled arc
         painter.setPen(QPen(self.outline_color, 18))
         painter.setBrush(QBrush(self.outline_color))
+        
+        #draw the progress bar of the gauge
+        current_angle = calculate_angle_between((self.end_cap.center().x(),self.end_cap.center().y()), (self.handle_center.x(),self.handle_center.y())) 
+        current_angle = int(self._calc_progress_bar_distance() - self.handle_size/2)        
+        current_angle = 0 if current_angle < 0 else -current_angle
+        painter.drawArc(self.handle_track, 180*16, current_angle * 16)
 
-        current_angle = calculate_angle_between((self.handle_track.x(),self.handle_track.y()), (self.handle_center.x(),self.handle_center.y()))
-        current_angle = convert_angle_to_360(current_angle)
-
-        print(f"current angle: {current_angle }")
-        painter.drawArc(self.handle_track, 0, int(abs(current_angle - 180)) * 16)
         
         # set painter color and brush for the inner and outer arcs
         painter.setPen(QPen(self.outline_color, 2))      
@@ -71,9 +72,15 @@ class Gauge(QWidget):
         painter.drawArc(self.start_cap, 0, -180 * 16)
         painter.drawArc(self.end_cap, 0, -180 * 16)
 
+
+        painter.setBrush(QBrush(self.outline_color))
+        painter.drawEllipse(self.start_cap.center(),self.handle_size + 0.2, self.handle_size+0.2)
+
         # draw the handle
         painter.setBrush(QBrush(self.handle_color))
         painter.drawEllipse(self.handle_center,self.handle_size, self.handle_size)
+
+        
         
         # DRAW THE CURRENT VALUE
         painter.setPen(QPen(self.outline_color, 2))
@@ -188,3 +195,23 @@ class Gauge(QWidget):
         """
         self.title = title
         self.update()
+
+    # calculate the span of the arc of the progress bar based on the current value of the gauge
+    def _calc_progress_bar_distance(self):
+        center = self.handle_track.center()
+        angle = calculate_angle_between((center.x(),center.y()), (self.handle_center.x(), self.handle_center.y()))
+        angle = convert_angle_to_360(angle)
+
+        # calculate the max angle based on the center of gauge and the end cap
+        max_angle = calculate_angle_between((center.x(),center.y()), (self.end_cap.x(), self.end_cap.y()))
+        max_angle = convert_angle_to_360(max_angle)
+
+        #starting angle of the arc
+        min_angle = 178
+
+        percent = abs((angle - min_angle) / (max_angle - min_angle))
+
+        #clamp the percent between 0 and 1
+        percent = max(min(percent, 1),0)
+       
+        return percent * (max_angle - min_angle)
