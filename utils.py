@@ -391,3 +391,17 @@ def calculate_point_along_arc(center, radius, angle):
     y = int(center[1] + radius * np.sin(angle_rad))
 
     return x, y
+
+
+
+# convert angle from -180 to 180 to 0 to 360
+def convert_angle_to_360(angle):
+    if angle < 0:
+        angle = 360 + angle
+    return angle
+
+# given an angle based on a cloverwise direction, convert it to a counter clockwise direction
+def convert_angle_to_counter_clockwise(angle):
+    if angle > 180:
+        angle = 360 - angle
+    return angle

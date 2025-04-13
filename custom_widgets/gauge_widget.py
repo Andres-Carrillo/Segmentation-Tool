@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QWidget)
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPainter, QPen, QColor, QBrush
-from utils import calculate_angle_between,calculate_point_along_arc,in_circle
+from utils import calculate_angle_between,calculate_point_along_arc,in_circle,convert_angle_to_360,convert_angle_to_counter_clockwise
 
 
 class Gauge(QWidget):
@@ -17,7 +17,9 @@ class Gauge(QWidget):
         self.handle_color = handle_color
         self.outline_color = outline_color
         self.dragging = False
+        self.keyboard_control = False
         self.title = None
+        self.mouse_position = None
 
         self.setMouseTracking(True)
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -37,6 +39,9 @@ class Gauge(QWidget):
         self.handle_center = self.start_cap.center()
         self.handle_size = 10
 
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -44,6 +49,16 @@ class Gauge(QWidget):
         # draw background of the dial
         painter.setPen(QPen(self.background_color, 20))
         painter.drawArc(self.handle_track, 0, 180 * 16)
+
+        #draw the filled arc
+        painter.setPen(QPen(self.outline_color, 18))
+        painter.setBrush(QBrush(self.outline_color))
+
+        current_angle = calculate_angle_between((self.handle_track.x(),self.handle_track.y()), (self.handle_center.x(),self.handle_center.y()))
+        current_angle = convert_angle_to_360(current_angle)
+
+        print(f"current angle: {current_angle }")
+        painter.drawArc(self.handle_track, 0, int(abs(current_angle - 180)) * 16)
         
         # set painter color and brush for the inner and outer arcs
         painter.setPen(QPen(self.outline_color, 2))      
@@ -67,74 +82,102 @@ class Gauge(QWidget):
         painter.setFont(font)
 
         value_rect = QtCore.QRectF(int(self.outer_ring.x()), int(self.outer_ring.y() + self.inner_ring.height()/6), 120, 40)
-        # print("value in int",self.current_value)
-        # print("the current value",str(self.current_value))
+
         painter.drawText(value_rect, QtCore.Qt.AlignmentFlag.AlignCenter, str(self.current_value))
 
         # draw the title
         if self.title is not None:
              font = painter.font()
-            #  font.setPointSize(20)
-            #  painter.setFont(font)
-            #  painter.setPen(QPen(self.outline_color, 2))
-
-            #  print("self.rect()",self.rect())
-            #  print("inner_ring",self.inner_ring)
-            #  print("outer_ring",self.outer_ring.getRect())
              title_rect = QtCore.QRectF(int(self.outer_ring.x()), int(self.inner_ring.y() + self.inner_ring.height()/2), 120, 40)
-            #  title_rect.setX(int(self.handle_center.x()))
-            #  title_rect.setY(int(self.handle_center.y() - 20))
+            
              painter.drawText(title_rect, QtCore.Qt.AlignmentFlag.AlignCenter, self.title)
 
         painter.end()
         
     def mousePressEvent(self, event):
+
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 clicked_handle = in_circle(self.handle_center.x(),self.handle_center.y(), event.pos().x(), event.pos().y(), self.handle_size)
                 
                 if clicked_handle:
                     self.dragging = True
+
+        if event.button() == QtCore.Qt.MouseButton.RightButton:
+            clicked_handle = in_circle(self.handle_center.x(),self.handle_center.y(), event.pos().x(), event.pos().y(), self.handle_size)
+       
+            if clicked_handle:
+                self.keyboard_control = not self.keyboard_control
+                self.setFocus()
+
               
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self.dragging = False
+
+        # if event.button() == QtCore.Qt.MouseButton.RightButton:
+        #      self.keyboard_control = False
         
     def mouseMoveEvent(self, event):
             center = self.handle_track.center()
             angle = calculate_angle_between((center.x(),center.y()), (event.pos().x(), event.pos().y()))
-            print("angle",angle)
+            
+            angle = convert_angle_to_360(angle)
 
             if self.dragging:
+                self.mouse_position = event.pos()
                 point = calculate_point_along_arc((center.x(),center.y()), int(self.handle_track.width()/2),angle)
 
-
-                end_point = calculate_point_along_arc((center.x(),center.y()), int(self.handle_track.width()/2),0)
-                
-                end_angle = calculate_angle_between((center.x(),center.y()), (end_point[0], end_point[1]))
-                
-                # need to test calulating angle based on starting point of the arc
-                end_angle = calculate_angle_between((event.pos()[0],center.pos().y()), (self.start_cap.x(), self.start_cap.y()))
-                # print("end point",end_point)
-                print("end angle",end_angle)
-                
-                start_point = calculate_point_along_arc((center.x(),center.y()), int(self.handle_track.width()/2),179)
-
-               
                 # base case the angle is within the expected range
-                if (angle < 1 or angle > 178):
+                if (angle > 178 or (angle <5)):
+                    # set new handle position
                     self.handle_center = QtCore.QPoint(point[0], point[1])
 
-                    #percentage should be angle based
+                    # calculate the max angle based on the center of gauge and the end cap
+                    max_angle = calculate_angle_between((center.x(),center.y()), (self.end_cap.x(), self.end_cap.y()))
+                    max_angle = convert_angle_to_360(max_angle)
 
-                    percent = (point[0] - start_point[0]) / (end_point[0] - start_point[0]) 
+                    #starting angle of the arc
+                    min_angle = 178
+
+                    percent = abs((angle - min_angle) / (max_angle - min_angle))
+
+                    #clamp the percent between 0 and 1
+                    percent = max(min(percent, 1),0)
        
                     self.current_value = int(percent * self.max)
                 # edge case the angle is outside the expected range and would result in a value larger than the max
-                elif angle > 1 and angle < 45:
+                elif angle > 120 and self.current_value < self.max - 10:
+                    self.current_value = self.min
+                    self.handle_center = self.start_cap.center()
+
+                elif angle < 85 and self.current_value > self.min + 30:
                     self.current_value = self.max
-                   
+                    self.handle_center = self.end_cap.center()   
 
             self.update()
+
+
+    def keyPressEvent(self, event):
+            key = event.key()
+
+            if self.keyboard_control:
+                if key == QtCore.Qt.Key.Key_Down:
+                    self.current_value -= 1
+                elif key == QtCore.Qt.Key.Key_Up:
+                    self.current_value += 1
+
+                # clamp the value between min and max
+                self.current_value = max(self.min, min(self.max, self.current_value))
+
+                # update the handle position based on the current value
+                percent = (self.current_value - self.min) / (self.max - self.min)
+                angle = 178 + percent * (360 - 178)
+
+                point = calculate_point_along_arc((self.handle_track.center().x(),self.handle_track.center().y()), int(self.handle_track.width()/2),angle)
+
+                self.handle_center = QtCore.QPoint(point[0], point[1])
+
+                self.update()
 
 
     def set_title(self, title:str):
