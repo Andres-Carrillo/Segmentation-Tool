@@ -393,6 +393,25 @@ def calculate_point_along_arc(center, radius, angle):
     return x, y
 
 
+def calculate_point_along_ellipse(center, radius_x, radius_y, angle):
+    """
+    Calculate a point along an elliptical curve given the center, radii, and angle.
+    
+    :param center: Tuple (x, y) representing the center of the ellipse
+    :param radius_x: Horizontal radius of the ellipse
+    :param radius_y: Vertical radius of the ellipse
+    :param angle: Angle in degrees
+    :return: Tuple (x, y) representing the point on the ellipse
+    """
+    # Convert the angle to radians
+    angle_rad = np.radians(angle)
+    
+    # Calculate the x and y coordinates using the parametric equation of an ellipse
+    x = int(center[0] + radius_x * np.cos(angle_rad))
+    y = int(center[1] + radius_y * np.sin(angle_rad))  # Subtract because of inverted y-axis
+    
+    return x, y
+
 
 # convert angle from -180 to 180 to 0 to 360
 def convert_angle_to_360(angle):
@@ -404,4 +423,13 @@ def convert_angle_to_360(angle):
 def convert_angle_to_counter_clockwise(angle):
     if angle > 180:
         angle = 360 - angle
+    return angle
+
+
+#flip the angle 180 degrees
+def flip_angle(angle):
+    if angle > 180:
+        angle = 360 - angle
+    else:
+        angle = 360 + angle
     return angle

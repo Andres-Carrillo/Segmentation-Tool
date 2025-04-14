@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Matplotlib with QThread and QTimer")
+        self.setWindowTitle("Gauge Widget Example")
         self.setGeometry(100, 100, 800, 600)
 
         # Create a central widget
@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         # Add Matplotlib figure
         # self.canvas = MatplotlibCanvas(self)
         self.dial = Gauge(parent=self)
-        self.dial.set_title("Gauge")
+        self.dial.set_title("Dilation")
         
         layout.addWidget(self.dial)
 
