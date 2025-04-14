@@ -50,23 +50,14 @@ class Gauge(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        self.inner_ring = self.rect().adjusted(20, 20, -20, -20)
-        self.outer_ring = self.rect().adjusted(40, 40, -40, -40)
-        self.handle_track = self.rect().adjusted(30, 30, -30, -30)
-
         painter.setPen(QPen(self.outline_color, 2))
         painter.setBrush(QBrush(self.outline_color))
 
-        self.start_cap = QtCore.QRectF(self.inner_ring.bottomLeft().x(), self.inner_ring.bottomLeft().y()/2, 20, 20)
-        self.end_cap = QtCore.QRectF(self.outer_ring.bottomRight().x() + 1, self.inner_ring.bottomLeft().y()/2, 20, 20)
-
-        # # draw background of the dial
+        # draw background of the dial
         painter.setPen(QPen(self.background_color, 19))
-
         painter.drawArc(self.handle_track, 0, 180 * 16)
 
-        #draw the filled arc
+        # draw the filled arc
         painter.setPen(QPen(self.outline_color, 18))
         painter.setBrush(QBrush(self.outline_color))
         
@@ -115,19 +106,16 @@ class Gauge(QWidget):
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 
-                # print("handle_center",self.handle_center)
                 clicked_handle = in_circle(self.handle_center.x(),self.handle_center.y(), event.pos().x(), event.pos().y(), self.handle_size)
-                print("clicked_handle",clicked_handle)
-                
                 if clicked_handle:
                     self.dragging = True
 
         if event.button() == QtCore.Qt.MouseButton.RightButton:
             clicked_handle = in_circle(self.handle_center.x(),self.handle_center.y(), event.pos().x(), event.pos().y(), self.handle_size)
        
-            if clicked_handle:
-                self.keyboard_control = not self.keyboard_control
-                self.setFocus()
+          
+        self.keyboard_control = not self.keyboard_control
+        self.setFocus()
 
               
     def mouseReleaseEvent(self, event):
