@@ -18,6 +18,7 @@ class Gauge(QWidget):
         self.outline_color = outline_color
         self.dragging = False
         self.keyboard_control = False
+        self.display_value = True
         self.title = None
         self.mouse_position = None
 
@@ -50,9 +51,9 @@ class Gauge(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        self.inner_ring = self.rect().adjusted(self.rect().x() + 20, self.rect().y() + 20, -20, -20)
-        self.outer_ring = self.rect().adjusted(self.rect().x() + 40, self.rect().y() + 40, -40, -40)
-        self.handle_track = self.rect().adjusted(self.rect().x() + 30, self.rect().y() + 30, -30, -30)
+        self.inner_ring = self.rect().adjusted(20, 20, -20, -20)
+        self.outer_ring = self.rect().adjusted(40, 40, -40, -40)
+        self.handle_track = self.rect().adjusted(30, 30, -30, -30)
 
         painter.setPen(QPen(self.outline_color, 2))
         painter.setBrush(QBrush(self.outline_color))
