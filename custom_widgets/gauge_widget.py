@@ -54,11 +54,10 @@ class Gauge(QWidget):
         painter.setBrush(QBrush(self.outline_color))
 
         # draw background of the dial
-        painter.setPen(QPen(self.background_color, 19))
+        painter.setPen(QPen(self.background_color, 15))
         painter.drawArc(self.handle_track, 0, 180 * 16)
 
         # draw the filled arc
-        painter.setPen(QPen(self.outline_color, 18))
         painter.setBrush(QBrush(self.outline_color))
         
         # # #draw the progress bar of the gauge
@@ -85,7 +84,7 @@ class Gauge(QWidget):
         # DRAW THE CURRENT VALUE
         if self.display_value:
             font = painter.font()
-            font.setPointSize(int(self.rect().height()/12))
+            font.setPointSize(int(self.rect().height()/18))
             painter.setFont(font)
 
             text_rect = QtCore.QRectF(int(self.rect().x() + self.rect().width()/4), int(self.outer_ring.y() + self.inner_ring.height()/6), self.rect().width()/2, self.rect().height()/4)
@@ -94,7 +93,7 @@ class Gauge(QWidget):
         # draw the title
         if self.title is not None:
              font = painter.font()
-             font.setPointSize(int(self.rect().height()/12))
+             font.setPointSize(int(self.rect().height()/18))
              painter.setFont(font)
 
              text_rect = QtCore.QRectF(int(self.rect().x() + self.rect().width()/4), int(self.inner_ring.y() + self.inner_ring.height()/2), self.rect().width()/2, self.rect().height()/4)
