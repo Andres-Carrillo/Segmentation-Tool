@@ -1,12 +1,8 @@
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget,QLabel,QImage
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt,QThread, pyqtSignal
+from PyQt5.QtCore import Qt
 from custom_workers.camera_worker import CameraWorker
 from utils import qlabel_to_cv_image
-from utils import cv_image_to_qlabel
-import cv2 as cv
-
-
 
 class CameraWidget(QWidget):
     running = False
