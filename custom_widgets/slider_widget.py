@@ -12,9 +12,6 @@ class Slider(QtWidgets.QWidget):
         self._range = (min_value, max_value)
         self.dragging_handle = False    
 
-        self.x_offset = 0
-        self.y_offset = 0
-
         self._alignment = 'left'
 
         self._scale_varaibles(initial=True)        
@@ -22,6 +19,8 @@ class Slider(QtWidgets.QWidget):
         self.track_bar_color = track_bar_color
         self.bckgrnd_color = background_color
         self.handle_color = handle_color
+
+        self.cur_value = 0
 
 
         self.setSizePolicy(
@@ -50,7 +49,7 @@ class Slider(QtWidgets.QWidget):
 
         # draw the filled bar
         painter.setBrush(self.track_bar_color)
-        track_bar = QtCore.QRect(self.starting_position[0], self.starting_position[1], int(self.filled_bar_distance + self.handle_width/2), self.widget_height )#QtCore.QRect(self.starting_position[0], self.starting_position[1], int(self.filled_bar_distance + self.handle_width/2), self.ending_position[1] - self.y_offset)
+        track_bar = QtCore.QRect(self.starting_position[0], self.starting_position[1], int(self.filled_bar_distance + self.handle_width/2), self.widget_height)
         painter.drawRoundedRect(track_bar, 5, 5)
 
         # set the color for the handle
@@ -89,6 +88,7 @@ class Slider(QtWidgets.QWidget):
             if self.dragging_handle:
                 self.handle_position = position
                 self.filled_bar_distance = abs(self.handle_position - self.starting_position[0])
+                self.cur_value = self.get_value()
 
             self._trigger_refresh()
             self.value_changed.emit()
@@ -124,10 +124,19 @@ class Slider(QtWidgets.QWidget):
         
         self._trigger_refresh()
 
-    def _scale_varaibles(self,initial=False):
+    #calculate the position of the handle based on the value of the slider
+    def _calc_handle_position(self):
+        pixel_distance = self.ending_position[0] - self.starting_position[0]
+        value_range = self._range[1] - self._range[0]
         
-        print("x_offset", self.x_offset)
-        print("y_offset", self.y_offset)
+        current_percentage = (self.cur_value - self._range[0]) / value_range
+        handle_position = int(current_percentage * pixel_distance) + self.starting_position[0]
+
+        clip_value(handle_position, self.starting_position[0], int((self.widget_width + self.x_offset )))
+
+        return handle_position
+
+    def _scale_varaibles(self,initial=False):
         self.set_alignment()
 
         self.widget_width = int(self.rect().width()/2)
@@ -137,15 +146,11 @@ class Slider(QtWidgets.QWidget):
         self.handle_height = self.widget_height
 
         self.starting_position = (self.handle_width  + self.x_offset,self.handle_height + self.y_offset)
-        self.ending_position = (int((self.widget_width * 2) + self.x_offset) ,self.widget_height + self.y_offset)
-
-        self.handle_position = int(self.widget_width) if initial else clip_value(self.handle_position, self.starting_position[0] , int((self.widget_width + self.x_offset )))
+        self.ending_position = (int((self.widget_width * 2) + self.x_offset) ,self.widget_height + self.y_offset)\
+        
+        self.handle_position = int(self.widget_width) if initial else self._calc_handle_position() 
         
         self.hand_rect = QtCore.QRect(self.handle_position, self.starting_position[1], self.handle_width, self.widget_height)
         
         self.filled_bar_distance = abs(self.hand_rect.center().x() - self.starting_position[0])
-
         
-
-        # print("widget_width", self.widget_width)
-        # print("parent_width", self.parent().width())
