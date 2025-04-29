@@ -23,24 +23,11 @@ class RangeSlider(QtWidgets.QWidget):
 
         self.padding = padding
         self.title = title
+        
+        self.widget_width = int(self.rect().width()/1.5)
+
+        self.widget_height = int(self.rect().height()/32)
        
-        if parent != None:
-            if self.parent(). width() > 250:
-                self.widget_width = int(self.parent().width()/4)
-            else:
-                self.widget_width = int(self.parent().width())
-
-            if self.parent().height() > 250:
-                self.widget_height = int(self.parent().height()/4)
-            else:
-                self.widget_height = int(self.parent().height()/4)
-        else:
-            if widget_height is not None:
-                self.widget_height = widget_height - self.padding
-
-            if widget_width is  not None:
-                self.widget_width = int(widget_height) - self.padding
-
         self.handle_width = handle_width
         self.handle_height = handle_height
 
@@ -54,13 +41,22 @@ class RangeSlider(QtWidgets.QWidget):
         self.bckgrnd_color = background_color
         self.handle_color = handle_color
 
-        self.setMinimumWidth(self.widget_width +padding*2 + self.handle_width*2)
-        self.setMinimumHeight(self.widget_height + padding*2 + self.handle_height*2)
-
         self.setSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding
         )
+
+    def  resizeEvent(self, a0):
+        self.widget_width = int(self.rect().width()/1.5)
+        self.widget_height = max(int(self.rect().height()/32),11)
+
+
+        self.starting_position = (self.padding + self.x_offset, self.padding + self.y_offset)
+        self.ending_position = (int((self.widget_width + self.x_offset) + self.padding / 2), int(self.widget_height) + self.y_offset)
+
+        self.min_handle_position = self.x_offset + self.padding
+        self.max_handle_position = int((self.widget_width + self.x_offset) + self.padding / 2)
+
 
     def paintEvent(self, e):
         track_bar_width = abs(self.max_handle_position - self.min_handle_position)
