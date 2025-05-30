@@ -59,7 +59,7 @@ class RangeSlider(QtWidgets.QWidget):
 
 
     def paintEvent(self, e):
-        track_bar_width = abs(self.max_handle_position - self.min_handle_position)
+        track_bar_width = abs(self.max_handle_position - self.min_handle_position + int(self.handle_width/2))
 
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
@@ -80,7 +80,7 @@ class RangeSlider(QtWidgets.QWidget):
             painter.drawText(int(self.starting_position[0]), 10, 100, 100, Qt.AlignHCenter, self.title)
  
         # draw the background
-        background = QtCore.QRect(self.x_offset + self.padding, self.y_offset, self.widget_width, self.widget_height)
+        background = QtCore.QRect(self.x_offset + self.padding, self.y_offset, self.widget_width + int(self.handle_width/2), self.widget_height)
         painter.drawRoundedRect(background, 5, 5)
 
         # draw the filled in range bar
@@ -90,11 +90,11 @@ class RangeSlider(QtWidgets.QWidget):
 
         # draw the min handle
         painter.setBrush(self.handle_color)
-        min_handle = QtCore.QRect(self.min_handle_position, self.y_offset, self.handle_width, self.handle_height)
+        min_handle = QtCore.QRect(self.min_handle_position, self.y_offset, self.handle_width, self.widget_height)
         painter.drawRoundedRect(min_handle, 5, 5)
 
         # draw the max handle
-        max_handle = QtCore.QRect(self.max_handle_position, self.y_offset, self.handle_width, self.handle_height)
+        max_handle = QtCore.QRect(self.max_handle_position, self.y_offset, self.handle_width, self.widget_height)
         painter.drawRoundedRect(max_handle, 5, 5)
 
         painter.end()
@@ -114,9 +114,9 @@ class RangeSlider(QtWidgets.QWidget):
         local_pos = self.mapFromGlobal(e.globalPos())
 
         # check if the mouse is within the bounds of the handle
-        if in_bounds(local_pos.x(), local_pos.y(), self.min_handle_position, self.y_offset, self.handle_width, self.handle_height):
+        if in_bounds(local_pos.x(), local_pos.y(), self.min_handle_position, self.y_offset, self.handle_width, self.widget_height):
             self.dragging_min_handle = True  # clicked on the min handle
-        elif in_bounds(local_pos.x(), local_pos.y(), self.max_handle_position, self.y_offset, self.handle_width, self.handle_height):
+        elif in_bounds(local_pos.x(), local_pos.y(), self.max_handle_position, self.y_offset, self.handle_width, self.widget_height):
             self.dragging_max_handle = True  # clicked on the max handle
 
     def mouseReleaseEvent(self, e):
@@ -175,3 +175,25 @@ class RangeSlider(QtWidgets.QWidget):
         self.high = high
 
         self._trigger_refresh()
+
+
+class DockableRangeSlider(QtWidgets.QDockWidget):
+    value_changed = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None, min_value=0, max_value=100, handle_color=QtGui.QColor('gray'), track_bar_color=QtGui.QColor('red'), background_color=QtGui.QColor('black'),
+                 widget_width=None, widget_height=None, padding=10, handle_width=10, handle_height=10, x_offset=0, y_offset=0,title=None):
+        super().__init__(parent)
+        self.setWidget(RangeSlider(parent=self, min_value=min_value, max_value=max_value, handle_color=handle_color,
+                                   track_bar_color=track_bar_color, background_color=background_color,
+                                   widget_width=widget_width, widget_height=widget_height,
+                                   padding=padding, handle_width=handle_width, handle_height=handle_height,
+                                   x_offset=x_offset, y_offset=y_offset,title=title))
+        
+        self.setFeatures(QtWidgets.QDockWidget.DockWidgetMovable | QtWidgets.QDockWidget.DockWidgetFloatable)
+        
+
+    def get_range(self):
+        return self.range_slider.get_range()
+
+    def update_values(self, low, high):
+        self.range_slider.update_values(low, high)
