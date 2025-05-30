@@ -1,6 +1,7 @@
-from custom_widgets.range_widget import RangeSlider
+from custom_widgets.range_widget import RangeSlider,DockableRangeSlider
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtCore import Qt
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -17,8 +18,8 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(layout)
 
         self.slider = RangeSlider(parent=self)
-
-
+        self.dock_slider = DockableRangeSlider(parent=self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_slider)
 
         layout.addWidget(self.slider)
 
