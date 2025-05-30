@@ -62,6 +62,11 @@ class ColorSpacePlot(FigureCanvasQTAgg):
 
         return eval,azim,roll
 
+
+# TODO: should make this a dockable widget
+# this will allow the user to drag the widget around
+# and place it wherever they want
+# the widget should only contain the plot and the sliders
 class ColorSpaceWidget(QWidget):
     def __init__(self, parent =None):
         super().__init__(parent)
