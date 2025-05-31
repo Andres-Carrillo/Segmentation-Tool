@@ -4,6 +4,7 @@ import cv2
 import itertools
 from functools import reduce
 from operator import mul
+import math
 
 def radians_to_degrees(radians):
     """
@@ -300,7 +301,15 @@ def generate_subsample_rgb_colors(r_range=(0,256),g_range=(0,256),b_range=(0,256
     middle_step = calculate_step_size(middle_range)
     bottom_step = calculate_step_size(bottom_range)
 
-    result = list(itertools.product(range(r_range[0], r_range[1],top_step), range(g_range[0], g_range[1],middle_step), range(g_range[0], g_range[1],bottom_step)))
+    print("top step:", top_step)
+    print("middle step:", middle_step)
+    print("bottom step:", bottom_step)
+    print("total number of cobinations:", top_step * middle_step * bottom_step)
+
+    result = list(itertools.product(
+        range(r_range[0], r_range[1],top_step), 
+        range(g_range[0], g_range[1],middle_step), 
+        range(b_range[0], b_range[1],bottom_step)))
 
     return result
 
