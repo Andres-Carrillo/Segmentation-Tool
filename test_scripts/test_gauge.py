@@ -1,3 +1,14 @@
+import OpenGL.GL as GL
+import pathlib
+import sys
+
+# Get the package directory
+package_dir = str(pathlib.Path(__file__).resolve().parents[1])
+# Add the package directory into sys.path if necessary
+if package_dir not in sys.path:
+    sys.path.insert(0, package_dir)
+
+
 from custom_widgets.gauge_widget import Gauge
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget

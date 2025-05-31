@@ -1,0 +1,18 @@
+[
+    {
+        "name": "sdafa",
+        "id": 0,
+        "color_space": 4,
+        "color": "#cfe189",
+        "lower_bound": [
+            0,
+            104,
+            0
+        ],
+        "upper_bound": [
+            255,
+            255,
+            255
+        ]
+    }
+]

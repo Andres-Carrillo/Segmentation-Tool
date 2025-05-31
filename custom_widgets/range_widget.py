@@ -6,7 +6,7 @@ class RangeSlider(QtWidgets.QWidget):
     value_changed = QtCore.pyqtSignal()
 
     def __init__(self,parent=None, min_value=0, max_value=100, handle_color=QtGui.QColor('gray'), track_bar_color=QtGui.QColor('red'), background_color=QtGui.QColor('black'),
-                  widget_width=None, widget_height=None, padding=10, handle_width=10, handle_height=10, x_offset=0, y_offset=0,title=None, *args, **kwargs):
+                  widget_width_scale=1.5, widget_height_scale=32, padding=10, handle_width=10, handle_height=10, x_offset=0, y_offset=0,title=None, *args, **kwargs):
         super().__init__(parent=parent,*args, **kwargs)
         self.setMouseTracking(True)
 
@@ -23,11 +23,14 @@ class RangeSlider(QtWidgets.QWidget):
 
         self.padding = padding
         self.title = title
-        
-        self.widget_width = int(self.rect().width()/1.5)
 
-        self.widget_height = int(self.rect().height()/32)
-       
+        self.width_scale = widget_width_scale
+        self.height_scale = widget_height_scale
+
+        self.widget_width = int(self.rect().width()/self.width_scale)
+
+        self.widget_height = int(self.rect().height()/self.height_scale)
+
         self.handle_width = handle_width
         self.handle_height = handle_height
 
@@ -47,8 +50,8 @@ class RangeSlider(QtWidgets.QWidget):
         )
 
     def  resizeEvent(self, a0):
-        self.widget_width = int(self.rect().width()/1.5)
-        self.widget_height = max(int(self.rect().height()/32),11)
+        self.widget_width = int(self.rect().width()/self.width_scale)
+        self.widget_height = max(int(self.rect().height()/self.height_scale),11)
 
 
         self.starting_position = (self.padding + self.x_offset, self.padding + self.y_offset)
@@ -185,7 +188,7 @@ class DockableRangeSlider(QtWidgets.QDockWidget):
         super().__init__(parent)
         self.setWidget(RangeSlider(parent=self, min_value=min_value, max_value=max_value, handle_color=handle_color,
                                    track_bar_color=track_bar_color, background_color=background_color,
-                                   widget_width=widget_width, widget_height=widget_height,
+                                
                                    padding=padding, handle_width=handle_width, handle_height=handle_height,
                                    x_offset=x_offset, y_offset=y_offset,title=title))
         

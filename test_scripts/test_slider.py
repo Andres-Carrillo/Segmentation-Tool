@@ -1,7 +1,17 @@
-from custom_widgets.range_widget import RangeSlider,DockableRangeSlider
+import OpenGL.GL as GL
+import pathlib
+import sys
+
+# Get the package directory
+package_dir = str(pathlib.Path(__file__).resolve().parents[1])
+# Add the package directory into sys.path if necessary
+if package_dir not in sys.path:
+    sys.path.insert(0, package_dir)
+
+
+from custom_widgets.slider_widget import Slider
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -17,11 +27,15 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         central_widget.setLayout(layout)
 
-        self.slider = RangeSlider(parent=self)
-        self.dock_slider = DockableRangeSlider(parent=self)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_slider)
+        self.slider = Slider(parent=self)
+        self.left_slider = Slider(parent=self)
+
+        self.slider.set_alignment("Center")
+        self.left_slider.set_alignment("Center")
+
 
         layout.addWidget(self.slider)
+        layout.addWidget(self.left_slider)
 
 
 if __name__ == "__main__":

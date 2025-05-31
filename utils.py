@@ -272,28 +272,28 @@ def qcolor_to_cv_color(qcolor,color_space='RGB'):
 def calculate_step_size(range):
 
     if range > 200:
-        return 32
+        return 24
     
     if range > 180:
-        return 18
+        return 12
     
     if range > 150:
-        return 16
+        return 10
     
     if range > 100:
-        return 12
+        return 8
     
     if range > 10:
         return 4
     
     if range < 10:
-        return 1
+        return 2
 
 def generate_subsample_rgb_colors(r_range=(0,256),g_range=(0,256),b_range=(0,256)):
     """Generates a subsample of RGB color tuples with a given step size."""
-    top_range = int((r_range[1] - r_range[0]))
-    middle_range = int((g_range[1] - g_range[0]))
-    bottom_range = int((b_range[1] - b_range[0]))
+    top_range = int(abs(r_range[1] - r_range[0]))
+    middle_range = int(abs(g_range[1] - g_range[0]))
+    bottom_range = int(abs(b_range[1] - b_range[0]))
 
     # calculate step size of each channel to sample the colorspace without missing any colors and not overloading the computer    
     top_step = calculate_step_size(top_range)

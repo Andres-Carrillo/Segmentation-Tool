@@ -1,0 +1,16 @@
+[
+    {
+        "name": "asdfas",
+        "color": "#c5777f",
+        "lower_bound": [
+            161,
+            0,
+            0
+        ],
+        "upper_bound": [
+            255,
+            255,
+            255
+        ]
+    }
+]
