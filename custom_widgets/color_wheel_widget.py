@@ -6,7 +6,7 @@ from utils import get_colors_and_componets
 from custom_widgets.range_widget import RangeSlider
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PyQt5.QtCore import Qt
+import time
 
 class ColorSpacePlot(FigureCanvasQTAgg):
 
@@ -146,6 +146,7 @@ class ColorSpaceWidget(QWidget):
         self.plot_thread.c3_range = self.third_channel_slider.get_range()
 
         self.update()
+        time.sleep(0.016)
 
     def change_color_space(self,color_space):
         self.plot_thread.color_space = color_space
