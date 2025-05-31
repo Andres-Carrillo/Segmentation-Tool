@@ -18,6 +18,8 @@ class SegmentationApp(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
+        menubar = self.menuBar()
+        tool_menu = menubar.addMenu("Tools")
         self.camera_feed = VideoWidget(0)
         self.results_widget = OutputWidget(self)
         container = QGridLayout()
