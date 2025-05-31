@@ -1,10 +1,12 @@
-from PyQt5.QtWidgets import ( QWidget,QVBoxLayout,QStackedLayout)
+from PyQt5.QtWidgets import ( QWidget,QVBoxLayout,QStackedLayout,QHBoxLayout)
 from PyQt5 import QtWidgets
+from PyQt5.QtGui import QColor
 from custom_workers.color_space_worker import ColorSpaceWorker
 from utils import get_colors_and_componets
 from custom_widgets.range_widget import RangeSlider
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+from PyQt5.QtCore import Qt
 
 class ColorSpacePlot(FigureCanvasQTAgg):
 
@@ -63,19 +65,15 @@ class ColorSpacePlot(FigureCanvasQTAgg):
         return eval,azim,roll
 
 
-# TODO: should make this a dockable widget
-# this will allow the user to drag the widget around
-# and place it wherever they want
-# the widget should only contain the plot and the sliders
 class ColorSpaceWidget(QWidget):
     def __init__(self, parent =None):
         super().__init__(parent)
         self.plot = ColorSpacePlot(parent=self)
         self._init_worker()
             
-        self.first_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self)
-        self.second_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self)
-        self.third_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self)
+        self.first_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self,widget_width_scale=1.2,track_bar_color=QColor("#5678a0"))
+        self.second_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self,widget_width_scale=1.2,track_bar_color=QColor("#5678a0"))
+        self.third_channel_slider = RangeSlider(min_value=0, max_value=255,parent=self,widget_width_scale=1.2,track_bar_color=QColor("#5678a0"))
 
         self._set_slider_titles("RGB")
         self._init_layout()
@@ -92,38 +90,22 @@ class ColorSpaceWidget(QWidget):
         self.color_space = self.plot_thread.color_space
 
     def _init_layout(self):
-        # stacked layout
-        # to hold the plot and the sliders
-        stack = QStackedLayout()
         
-        #layout for the sliders
-        options_layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
 
-        # widget to hold the sliders
-        # this is needed to since stacked layout only works with widgets
-        slider_widget = QWidget()
+        #layout for the sliders
+        options_layout = QHBoxLayout()
+        options_layout.setSpacing(0)
         
         #layout for the sliders
         options_layout.addWidget(self.first_channel_slider)
         options_layout.addWidget(self.second_channel_slider)
         options_layout.addWidget(self.third_channel_slider)
-        
-        #set the layout for the slider widget
-        # which contains the sliders
-        slider_widget.setLayout(options_layout)
-        
-        # set stack mode so that all widgets are shown at once
-        stack.setStackingMode(QStackedLayout.StackAll)
-        
-        # add the plot and the sliders to the stack
-        stack.addWidget(self.plot)
-        stack.addWidget(slider_widget)
 
-        # set the size constraint for the stack
-        stack.setSizeConstraint(QStackedLayout.SetMinimumSize)
+        main_layout.addWidget(self.plot)
+        main_layout.addLayout(options_layout)
 
-        # set the layout for the widget
-        self.setLayout(stack)
+        self.setLayout(main_layout)
 
     def _init_events(self):
         self.first_channel_slider.value_changed.connect(self.update_plot)
