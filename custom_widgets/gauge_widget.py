@@ -6,6 +6,7 @@ from utils import calculate_angle_between,in_circle,convert_angle_to_360,calcula
 import numpy as np
 
 class Gauge(QWidget):
+    value_changed = QtCore.pyqtSignal()
     def __init__(self, parent = None, min=1, max=7, background_color=QColor(217, 217, 206), handle_color=QColor(255, 255, 255), outline_color=QColor(0, 0, 0)):
         super().__init__(parent)
     
@@ -148,16 +149,23 @@ class Gauge(QWidget):
                     percent = max(min(percent, 1),0)
        
                     self.current_value = int(percent * self.max)
+                    self.value_changed.emit()
+                    
                 # edge case the angle is outside the expected range and would result in a value larger than the max
                 elif angle > 120 and self.current_value < self.max - 10:
                     self.current_value = self.min
                     self.handle_center = self.start_cap.center()
-
+                    self.value_changed.emit()
+                # edge case the angle is outside the expected range and would result in a value smaller than the min
                 elif angle < 85 and self.current_value > self.min + 30:
                     self.current_value = self.max
                     self.handle_center = self.end_cap.center()   
+                    self.value_changed.emit()
 
+               
+    
             self.update()
+          
 
 
     def keyPressEvent(self, event):
