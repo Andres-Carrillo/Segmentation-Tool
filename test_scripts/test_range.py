@@ -1,4 +1,3 @@
-import OpenGL.GL as GL
 import pathlib
 import sys
 
