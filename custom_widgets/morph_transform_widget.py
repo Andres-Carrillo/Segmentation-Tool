@@ -66,7 +66,7 @@ class MorphTransformWidget(QWidget):
         self.setStyleSheet("background-color: #415a77;")
 
         self.image_label.setScaledContents(True)
-        self.image_path = "depositphotos_535761412-stock-video-glitch-circle-icon-black-background.jpg"
+        self.image_path = "images/morph_visual.jpg"
         self.image_label.setPixmap(QPixmap(self.image_path))
 
         main_layout.addWidget(self.image_label)
