@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget,QLabel, QVBoxLayout,QHBoxLayout,QDoubleSpinBox
+from PyQt5.QtWidgets import QWidget,QLabel, QVBoxLayout,QHBoxLayout,QDoubleSpinBox,QMenuBar
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPainter, QColor,QPixmap,QImage
@@ -6,6 +6,12 @@ from custom_widgets.gauge_widget import Gauge
 from PyQt5.QtCore import pyqtSignal
 import cv2 as cv
 import pathlib
+import enum
+
+class MorphTransformTypeSet(enum.Enum):
+    BASE = 0,
+    INTERMEDIATE = 1,
+    ADVANCED = 2
 
 
 # Get the package directory
@@ -23,6 +29,7 @@ class MorphTransformWidget(QWidget):
        
         super().__init__(parent)
         self._init_variables(kernel_size, iterations, background_color, handle_color, outline_color)
+        self.morph_type = MorphTransformTypeSet.BASE
         self._init_ui()
         self._init_events()
         self.setStyleSheet("background-color: #415a77;")
@@ -56,9 +63,14 @@ class MorphTransformWidget(QWidget):
         erosion_layout = QVBoxLayout()
         dilation_layout = QVBoxLayout()
         gauge_layout = QHBoxLayout()
-        dilation_spinbox_label = QLabel("Dilation Iterations:")
-        erosion_spinbox_label = QLabel("Erosion Iterations:")
-        
+        self.dilation_spinbox_label = QLabel("Dilation Iterations:")
+        self.erosion_spinbox_label = QLabel("Erosion Iterations:")
+        file_menu = QMenuBar(self)
+        file_menu.addMenu("")
+        file_menu.addAction("Base", lambda: self._update_morph_type(MorphTransformTypeSet.BASE))
+        file_menu.addAction("Intermediate", lambda: self._update_morph_type(MorphTransformTypeSet.INTERMEDIATE))
+        file_menu.addAction("Advanced", lambda: self._update_morph_type(MorphTransformTypeSet.ADVANCED))
+
         self.setMouseTracking(True)
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         
@@ -82,12 +94,12 @@ class MorphTransformWidget(QWidget):
         self.dilation_gauge.setFixedHeight(300)
 
         erosion_layout.addWidget(self.erosion_gauge)
-        erosion_layout.addWidget(erosion_spinbox_label,alignment=QtCore.Qt.AlignCenter)
+        erosion_layout.addWidget(self.erosion_spinbox_label,alignment=QtCore.Qt.AlignCenter)
         erosion_layout.addWidget(self.erosion_iterations_input,alignment=QtCore.Qt.AlignCenter)
         erosion_layout.setAlignment(QtCore.Qt.AlignCenter)
 
         dilation_layout.addWidget(self.dilation_gauge)
-        dilation_layout.addWidget(dilation_spinbox_label,alignment=QtCore.Qt.AlignCenter)
+        dilation_layout.addWidget(self.dilation_spinbox_label,alignment=QtCore.Qt.AlignCenter)
         dilation_layout.addWidget(self.dialtion_iterations_input,alignment=QtCore.Qt.AlignCenter)
         dilation_layout.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -110,6 +122,30 @@ class MorphTransformWidget(QWidget):
 
         self.dialtion_iterations_input.valueChanged.connect(self.update_visualization)
         self.erosion_iterations_input.valueChanged.connect(self.update_visualization)
+
+    def _update_morph_type(self, morph_type):
+        """Update the morph type and adjust the UI accordingly."""
+        self.morph_type = morph_type
+        if morph_type == MorphTransformTypeSet.BASE:
+            self.erosion_gauge.set_title("Erosion Kern")
+            self.dilation_gauge.set_title("Dilation Kern")
+            self.erosion_spinbox_label.setText("Erosion Iterations:")
+            self.dilation_spinbox_label.setText("Dilation Iterations:")
+
+        elif morph_type == MorphTransformTypeSet.INTERMEDIATE:
+            self.erosion_gauge.set_title("Opening Kern")
+            self.dilation_gauge.set_title("Closing Kern")
+            self.erosion_spinbox_label.setText("Opening Iterations:")
+            self.dilation_spinbox_label.setText("Closing Iterations:")
+
+        elif morph_type == MorphTransformTypeSet.ADVANCED:
+            self.erosion_gauge.set_title("Gradient Kern")
+            self.dilation_gauge.set_title("Top Hat Kern")
+            self.erosion_spinbox_label.setText("Gradient Iterations:")
+            self.dilation_spinbox_label.setText("Top Hat Iterations:")
+
+        self.update_visualization()
+            
 
     def resizeEvent(self, event):
         img_size = min(self.width(), self.height()) // 2
@@ -145,12 +181,13 @@ class MorphTransformWidget(QWidget):
         self.erosion_kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (erosion_value * 2 + 1, erosion_value * 2 + 1))
         self.dilation_kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (dilation_value * 2 + 1, dilation_value * 2 + 1))
        
-        # Apply erosion and dilation
-        eroded_image = cv.erode(image, self.erosion_kernel, iterations=self.erode_iterations)
-        dilated_image = cv.dilate(eroded_image, self.dilation_kernel, iterations=self.dilate_iterations)
-
+        
+        # # Apply erosion and dilation
+        # eroded_image = cv.erode(image, self.erosion_kernel, iterations=self.erode_iterations)
+        # dilated_image = cv.dilate(eroded_image, self.dilation_kernel, iterations=self.dilate_iterations)
+        processed_image = self.apply_morphological_transformations(image)
         # Convert the processed image back to QPixmap
-        processed_image = cv.cvtColor(dilated_image, cv.COLOR_BGR2RGB)
+        processed_image = cv.cvtColor(processed_image, cv.COLOR_BGR2RGB)
         qimage = QImage(processed_image.data, processed_image.shape[1], processed_image.shape[0], processed_image.strides[0], QImage.Format.Format_RGB888)
         pixmap = QPixmap.fromImage(qimage)
 
@@ -162,3 +199,18 @@ class MorphTransformWidget(QWidget):
         self.value_changed.emit() 
 
         self.update()
+
+
+    def apply_morphological_transformations(self, image):
+            
+            if self.morph_type == MorphTransformTypeSet.BASE:
+                image = cv.erode(image, self.erosion_kernel, iterations=self.erode_iterations)
+                image = cv.dilate(image, self.dilation_kernel, iterations=self.dilate_iterations)
+            elif self.morph_type == MorphTransformTypeSet.INTERMEDIATE:
+                image = cv.morphologyEx(image, cv.MORPH_OPEN, self.erosion_kernel, iterations=self.erode_iterations)
+                image = cv.morphologyEx(image, cv.MORPH_CLOSE, self.dilation_kernel, iterations=self.dilate_iterations)
+            elif self.morph_type == MorphTransformTypeSet.ADVANCED:
+                image = cv.morphologyEx(image, cv.MORPH_GRADIENT, self.erosion_kernel, iterations=self.erode_iterations)
+                image = cv.morphologyEx(image, cv.MORPH_TOPHAT, self.dilation_kernel, iterations=self.dilate_iterations)
+            
+            return image
