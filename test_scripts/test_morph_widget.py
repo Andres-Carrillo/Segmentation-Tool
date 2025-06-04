@@ -22,6 +22,7 @@ if __name__ == "__main__":
 
     # Create a central widget
     central_widget = QWidget()
+    central_widget.setStyleSheet("background-color: #415a77;")
     main_window.setCentralWidget(central_widget)
 
     # Create a layout
