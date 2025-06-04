@@ -18,6 +18,7 @@ class SegmentationApp(QMainWindow):
         self.init_ui()
         self._init_slots()
         self.external_windows = []
+        self.morph_widget = None
 
     def init_ui(self):
         menubar = self.menuBar()
@@ -213,21 +214,22 @@ class SegmentationApp(QMainWindow):
         f.close()
 
     def open_morph_transform_widget(self):
-        dock = QDockWidget("Morph Transform Tool", self)
-        self.morph_widget = MorphTransformWidget(parent=dock)
+        if self.morph_widget is None:
+            dock = QDockWidget("Morph Transform Tool", self)
+            self.morph_widget = MorphTransformWidget(parent=dock)
 
-        self.morph_widget.value_changed.connect(self.update_morph_transform)
+            self.morph_widget.value_changed.connect(self.update_morph_transform)
 
-        self.morph_widget.setFixedSize(600, 600)
-        dock.setWidget(self.morph_widget)
-        dock.setFloating(True)
-        dock.setAttribute(Qt.WA_DeleteOnClose, True)
-        dock.show()
-        self.external_windows.append(dock)
-        self.worker.morphological_operations = True
+            self.morph_widget.setFixedSize(600, 600)
+            dock.setWidget(self.morph_widget)
+            dock.setFloating(True)
+            dock.setAttribute(Qt.WA_DeleteOnClose, True)
+            dock.show()
+            self.external_windows.append(dock)
+            self.worker.morphological_operations = True
 
     def update_morph_transform(self):
-        print("Updating Morph Transform")
+        self.worker.morph_type = self.morph_widget.morph_type
         self.worker.dilate_iterations = self.morph_widget.dilate_iterations
         self.worker.erode_iterations = self.morph_widget.erode_iterations
         self.worker.erode_kernel_size = self.morph_widget.erosion_gauge.current_value
