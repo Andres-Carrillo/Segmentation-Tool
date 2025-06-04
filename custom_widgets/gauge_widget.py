@@ -7,7 +7,7 @@ import numpy as np
 
 class Gauge(QWidget):
     value_changed = QtCore.pyqtSignal()
-    def __init__(self, parent = None, min=1, max=7, background_color=QColor(217, 217, 206), handle_color=QColor(255, 255, 255), outline_color=QColor(0, 0, 0)):
+    def __init__(self, parent = None, min=1, max=7, background_color=QColor(217, 217, 206), handle_color=QColor(255, 255, 255), outline_color=QColor(0, 0, 0),text_color=QColor(255, 255, 255)):
         super().__init__(parent)
     
         self.min = min
@@ -22,6 +22,7 @@ class Gauge(QWidget):
         self.display_value = True
         self.title = None
         self.mouse_position = None
+        self.text_color = text_color
 
         self.setMouseTracking(True)
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -94,8 +95,10 @@ class Gauge(QWidget):
         # draw the title
         if self.title is not None:
              font = painter.font()
+             painter.setPen(QPen(self.text_color, 2))
              font.setPointSize(int(self.rect().height()/18))
              painter.setFont(font)
+             
 
              text_rect = QtCore.QRectF(int(self.rect().x() + self.rect().width()/4), int(self.inner_ring.y() + self.inner_ring.height()/2), self.rect().width()/2, self.rect().height()/4)
              painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignCenter, self.title)
