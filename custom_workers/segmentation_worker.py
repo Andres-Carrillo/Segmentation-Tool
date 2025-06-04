@@ -104,8 +104,7 @@ class SegmentationWorker(BaseWorker):
         self.binary_mode = True
 
         #variables for morphological operations to clean up masks
-        self.erode = False
-        self.dilate = False
+        self.morphological_operations = False
         self.erode_iterations = 1
         self.dilate_iterations = 1
         self.erode_kernel_size = 3
@@ -157,13 +156,14 @@ class SegmentationWorker(BaseWorker):
         mask = cv.inRange(converted_image, self.lower_bound, self.upper_bound)
 
         # apply morphological operations to clean up the mask
-        if self.erode:
-            kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.erode_kernel_size, self.erode_kernel_size))
-            mask = cv.erode(mask, kernel, iterations=self.erode_iterations)
-        
-        if self.dilate:
-            kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
-            mask = cv.dilate(mask, kernel, iterations=self.dilate_iterations)
+        if self.morphological_operations:
+            if self.erode_kernel_size > 0 and self.erode_iterations > 0:
+                kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.erode_kernel_size, self.erode_kernel_size))
+                mask = cv.erode(mask, kernel, iterations=self.erode_iterations)
+            
+            if self.dilate_kernel_size > 0 and self.dilate_iterations > 0:
+                kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
+                mask = cv.dilate(mask, kernel, iterations=self.dilate_iterations)
         
         # convert the mask to 3 channels
         mask = cv.merge([mask,mask,mask])
@@ -216,11 +216,10 @@ class SegmentationWorker(BaseWorker):
 
         mask = cv.inRange(converted_image, segmentation_class.lower_bound, segmentation_class.upper_bound)
 
-        if self.erode:
+        if self.morphological_operations:
             kernel = np.ones((self.erode_kernel_size, self.erode_kernel_size), np.uint8)
             mask = cv.erode(mask, kernel, iterations=self.erode_iterations)
 
-        if self.dilate:
             kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
             mask = cv.dilate(mask, kernel, iterations=self.dilate_iterations)
 
