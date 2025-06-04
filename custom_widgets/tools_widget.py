@@ -14,25 +14,9 @@ class SegmentationToolWidget(QWidget):
     def init_ui(self):
         self.color_space = ColorSpaceWidget(parent=self)
         self.color_space.setStyleSheet("background-color: transparent")
-
-        # self.erosion_control = Gauge(parent=self,min=0,max = 7)
-        # self.erosion_control.set_title("Erode Kernel")
-        # self.erosion_control.setFixedSize(200, 200)
-        # self.erosion_control.setStyleSheet("background-color: transparent")
-
-        # self.dilation_control = Gauge(parent=self,min=0,max = 7)
-        # self.dilation_control.set_title("Dilate kernel")
-        # self.dilation_control.setFixedSize(200, 200)
-        # self.dilation_control.setStyleSheet("background-color: transparent")
     
-
-        # contour_layout = QGridLayout()
-            
         tools_layout = QGridLayout()
-
         tools_layout.addWidget(self.color_space,0,0)
-        # tools_layout.addWidget(self.erosion_control,0,1,1,1)
-        # tools_layout.addWidget(self.dilation_control,1,1,1,1)
         tools_layout.setContentsMargins(0, 0, 0, 0)
         tools_layout.setSpacing(0)
 
