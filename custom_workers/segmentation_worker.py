@@ -3,6 +3,7 @@ from PyQt5.QtGui import QImage
 import cv2 as cv
 from utils import qimage_to_cv_image,cv_image_to_qimage
 import numpy as np
+from custom_widgets.morph_transform_widget import MorphTransformTypeSet
 
 class ImageBlob():
     def __init__(self, image, save_path):
@@ -102,6 +103,7 @@ class SegmentationWorker(BaseWorker):
         self.frame_count = 0
         self.save_worker =  None
         self.binary_mode = True
+        
 
         #variables for morphological operations to clean up masks
         self.morphological_operations = False
@@ -109,7 +111,7 @@ class SegmentationWorker(BaseWorker):
         self.dilate_iterations = 1
         self.erode_kernel_size = 3
         self.dilate_kernel_size = 3
-
+        self.morph_type = MorphTransformTypeSet.BASE
         self._init_worker()
 
     def _init_worker(self):
@@ -157,14 +159,8 @@ class SegmentationWorker(BaseWorker):
 
         # apply morphological operations to clean up the mask
         if self.morphological_operations:
-            if self.erode_kernel_size > 0 and self.erode_iterations > 0:
-                kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.erode_kernel_size, self.erode_kernel_size))
-                mask = cv.erode(mask, kernel, iterations=self.erode_iterations)
-            
-            if self.dilate_kernel_size > 0 and self.dilate_iterations > 0:
-                kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
-                mask = cv.dilate(mask, kernel, iterations=self.dilate_iterations)
-        
+            mask = self.apply_morphological_operations(mask)
+           
         # convert the mask to 3 channels
         mask = cv.merge([mask,mask,mask])
     
@@ -217,12 +213,8 @@ class SegmentationWorker(BaseWorker):
         mask = cv.inRange(converted_image, segmentation_class.lower_bound, segmentation_class.upper_bound)
 
         if self.morphological_operations:
-            kernel = np.ones((self.erode_kernel_size, self.erode_kernel_size), np.uint8)
-            mask = cv.erode(mask, kernel, iterations=self.erode_iterations)
-
-            kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
-            mask = cv.dilate(mask, kernel, iterations=self.dilate_iterations)
-
+            mask = self.apply_morphological_operations(mask)
+        
         base_mask[np.where(mask == 255)] = segmentation_class.color.getRgb()[:3]
 
         return base_mask
@@ -289,3 +281,39 @@ class SegmentationWorker(BaseWorker):
         arr[np.where(arr == 255)] = 0
 
         return cv_image_to_qimage(arr)
+    
+
+    def _handle_morph_type(self,mask,kernel,morph_id = 1):
+        if self.morph_type == MorphTransformTypeSet.BASE:
+            if morph_id == 1:
+                return cv.erode(mask, kernel, iterations=self.erode_iterations)
+            elif morph_id == 2:
+                return cv.dilate(mask, kernel, iterations=self.dilate_iterations)
+
+        elif self.morph_type == MorphTransformTypeSet.INTERMEDIATE:
+            if morph_id == 1:
+                return cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=self.erode_iterations)
+            elif morph_id == 2:
+                return cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=self.dilate_iterations)
+
+        elif self.morph_type == MorphTransformTypeSet.ADVANCED:
+            if morph_id == 1:
+                return cv.morphologyEx(mask, cv.MORPH_GRADIENT, kernel, iterations=self.erode_iterations)
+            elif morph_id == 2:
+                return cv.morphologyEx(mask, cv.MORPH_TOPHAT, kernel, iterations=self.dilate_iterations)
+            
+
+    def apply_morphological_operations(self, mask):
+        """
+        Applies morphological operations to the mask
+        """
+        if self.erode_kernel_size > 0 and self.erode_iterations > 0:
+            kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.erode_kernel_size, self.erode_kernel_size))
+            mask = self._handle_morph_type(mask,kernel,morph_id = 1)
+               
+            
+        if self.dilate_kernel_size > 0 and self.dilate_iterations > 0:
+            kernel = cv.getStructuringElement(cv.MORPH_RECT, (self.dilate_kernel_size, self.dilate_kernel_size))
+            mask = self._handle_morph_type(mask,kernel,morph_id =2)
+
+        return mask
