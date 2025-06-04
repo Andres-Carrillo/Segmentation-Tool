@@ -1,7 +1,7 @@
 import json
-from PyQt5.QtCore import  QThread, pyqtSlot
+from PyQt5.QtCore import  QThread, pyqtSlot,Qt
 from PyQt5.QtGui import QImage, QPixmap, QColor
-from PyQt5.QtWidgets import QWidget, QHBoxLayout,QGridLayout,QComboBox,QFileDialog,QMainWindow
+from PyQt5.QtWidgets import QWidget, QHBoxLayout,QGridLayout,QComboBox,QFileDialog,QMainWindow,QAction, QDockWidget
 import cv2 as cv
 from custom_widgets.output_widget import OutputWidget
 from custom_widgets.tools_widget import SegmentationToolWidget
@@ -9,17 +9,19 @@ from custom_workers.segmentation_worker import SegmentationClass, SegmentationWo
 from utils import qimage_to_cv_image
 from custom_widgets.video_widget import VideoWidget
 from custom_widgets.class_list_widget import ClassListWidget
-
+from custom_widgets.morph_transform_widget import MorphTransformWidget
 
 class SegmentationApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.init_worker()
         self.init_ui()
+        self._init_slots()
+        self.external_windows = []
 
     def init_ui(self):
         menubar = self.menuBar()
-        tool_menu = menubar.addMenu("Tools")
+        self.tool_menu = menubar.addMenu("Tools")
         self.camera_feed = VideoWidget(0)
         self.results_widget = OutputWidget(self)
         container = QGridLayout()
@@ -31,29 +33,11 @@ class SegmentationApp(QMainWindow):
         self.class_list_widget = ClassListWidget(parent=self)
         self.color_spaces = QComboBox()
 
-        self.setWindowTitle("Segmentation App")
-        
         self.camera_feed.image_label.setFixedSize(640, 510)
         self.camera_feed.image_label.setScaledContents(True)
         self.camera_feed.image_label.setStyleSheet("background-color: black")
         self.class_list_widget.setFixedSize(100,600)
 
-        # ==================== connect signals to slots ========================
-            # connect the color space combo box to the change color space slot
-        self.color_spaces.currentIndexChanged.connect(self.change_color_space)
-        self.seg_tools.color_space.first_channel_slider.value_changed.connect(self.update_bounds)
-        self.seg_tools.color_space.second_channel_slider.value_changed.connect(self.update_bounds)
-        self.seg_tools.color_space.third_channel_slider.value_changed.connect(self.update_bounds)
-
-        # connect the class list widget to the add segmentation class slot
-        self.class_list_widget.class_added.connect(self.add_segmentation_class)
-        # connect the class list widget to the edit segmentation class slot
-        self.class_list_widget.class_edited.connect(self.edit_segmentation_class)
-        # connect the class list widget to the remove segmentation class slot
-        self.class_list_widget.class_removed.connect(self.remove_segmentation_class)
-        
-        # connect the camera feed to the process slot
-        self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
 
         # ==================== add items to the color space combo box ========================
         self.color_spaces.addItem("RGB",cv.COLOR_BGR2RGB)
@@ -79,6 +63,30 @@ class SegmentationApp(QMainWindow):
         self.setCentralWidget(central_widget)
         
         self.setFixedSize(self.minimumWidth(), self.minimumHeight())
+
+    def _init_slots(self):
+        self.morph_action = QAction("Morph Transform Tool", self)
+        
+        self.setWindowTitle("Segmentation App")
+        self.tool_menu.addAction(self.morph_action)
+                # ==================== connect signals to slots ========================
+            # connect the color space combo box to the change color space slot
+        self.color_spaces.currentIndexChanged.connect(self.change_color_space)
+        self.seg_tools.color_space.first_channel_slider.value_changed.connect(self.update_bounds)
+        self.seg_tools.color_space.second_channel_slider.value_changed.connect(self.update_bounds)
+        self.seg_tools.color_space.third_channel_slider.value_changed.connect(self.update_bounds)
+
+        # connect the class list widget to the add segmentation class slot
+        self.class_list_widget.class_added.connect(self.add_segmentation_class)
+        # connect the class list widget to the edit segmentation class slot
+        self.class_list_widget.class_edited.connect(self.edit_segmentation_class)
+        # connect the class list widget to the remove segmentation class slot
+        self.class_list_widget.class_removed.connect(self.remove_segmentation_class)
+
+        self.morph_action.triggered.connect(self.open_morph_transform_widget)
+
+        # connect the camera feed to the process slot
+        self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
 
     def init_tools(self):
         print("init tools")
@@ -203,3 +211,24 @@ class SegmentationApp(QMainWindow):
             f.write(json.dumps(class_list, indent=4))
 
         f.close()
+
+    def open_morph_transform_widget(self):
+        dock = QDockWidget("Morph Transform Tool", self)
+        self.morph_widget = MorphTransformWidget(parent=dock)
+
+        self.morph_widget.value_changed.connect(self.update_morph_transform)
+
+        self.morph_widget.setFixedSize(600, 600)
+        dock.setWidget(self.morph_widget)
+        dock.setFloating(True)
+        dock.setAttribute(Qt.WA_DeleteOnClose, True)
+        dock.show()
+        self.external_windows.append(dock)
+        self.worker.morphological_operations = True
+
+    def update_morph_transform(self):
+        print("Updating Morph Transform")
+        self.worker.dilate_iterations = self.morph_widget.dilate_iterations
+        self.worker.erode_iterations = self.morph_widget.erode_iterations
+        self.worker.erode_kernel_size = self.morph_widget.erosion_gauge.current_value
+        self.worker.dilate_kernel_size = self.morph_widget.dilation_gauge.current_value
