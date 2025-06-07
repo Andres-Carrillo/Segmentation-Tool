@@ -177,15 +177,14 @@ class MorphTransformWidget(QWidget):
         # Get the current values from the gauges
         erosion_value = self.erosion_gauge.current_value
         dilation_value = self.dilation_gauge.current_value
+
         # Create the kernel for erosion and dilation
         self.erosion_kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (erosion_value * 2 + 1, erosion_value * 2 + 1))
         self.dilation_kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (dilation_value * 2 + 1, dilation_value * 2 + 1))
        
-        
         # # Apply erosion and dilation
-        # eroded_image = cv.erode(image, self.erosion_kernel, iterations=self.erode_iterations)
-        # dilated_image = cv.dilate(eroded_image, self.dilation_kernel, iterations=self.dilate_iterations)
         processed_image = self.apply_morphological_transformations(image)
+       
         # Convert the processed image back to QPixmap
         processed_image = cv.cvtColor(processed_image, cv.COLOR_BGR2RGB)
         qimage = QImage(processed_image.data, processed_image.shape[1], processed_image.shape[0], processed_image.strides[0], QImage.Format.Format_RGB888)
