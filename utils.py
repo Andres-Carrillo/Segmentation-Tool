@@ -78,7 +78,16 @@ def cv_image_to_qimage(cv_image):
     """
     if cv_image is None:
         return None
-    
+    if len(cv_image.shape) == 2:  # Grayscale image
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_GRAY2BGR)  # Convert to BGR for consistency
+    elif len(cv_image.shape) == 3 and cv_image.shape[2] == 4:  # RGBA image
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGBA2BGR)
+    elif len(cv_image.shape) == 3 and cv_image.shape[2] == 3:  # RGB image
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+    elif len(cv_image.shape) == 3 and cv_image.shape[2] == 1:  # Single channel image
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_GRAY2BGR)  # Convert to BGR for consistency
+    else:
+        raise ValueError(f"Unsupported cv2 image shape:", cv_image.shape)
     height, width, channel = cv_image.shape
     bytes_per_line = channel * width
     q_image = QImage(cv_image.data, width, height, bytes_per_line, QImage.Format_RGB888)
