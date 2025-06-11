@@ -149,8 +149,10 @@ class SegmentationWorker(BaseWorker):
                 self.frame_count += 1
                 self.save_worker.run()
 
-            self.processed.emit(data)
-            self.finished.emit()
+            self.data = data
+
+            # self.processed.emit(data)
+            # self.finished.emit()
 
     
     def base_segmentation(self, image):
