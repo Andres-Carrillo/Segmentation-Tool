@@ -10,6 +10,7 @@ from utils import qimage_to_cv_image
 from custom_widgets.video_widget import VideoWidget
 from custom_widgets.class_list_widget import ClassListWidget
 from custom_widgets.morph_transform_widget import MorphTransformWidget
+from custom_widgets.contours_widget import ContoursWidget
 
 class SegmentationApp(QMainWindow):
     def __init__(self):
@@ -29,6 +30,7 @@ class SegmentationApp(QMainWindow):
         options_layout = QHBoxLayout()
         layout = QHBoxLayout()
         central_widget = QWidget()
+        self.contour_widget = None
 
         self.seg_tools = SegmentationToolWidget(parent=self)
         self.class_list_widget = ClassListWidget(parent=self)
@@ -67,9 +69,11 @@ class SegmentationApp(QMainWindow):
 
     def _init_slots(self):
         self.morph_action = QAction("Morph Transform Tool", self)
+        self.contour_action = QAction("Contour Tool", self)
         
         self.setWindowTitle("Segmentation App")
         self.tool_menu.addAction(self.morph_action)
+        self.tool_menu.addAction(self.contour_action)
                 # ==================== connect signals to slots ========================
             # connect the color space combo box to the change color space slot
         self.color_spaces.currentIndexChanged.connect(self.change_color_space)
@@ -85,6 +89,7 @@ class SegmentationApp(QMainWindow):
         self.class_list_widget.class_removed.connect(self.remove_segmentation_class)
 
         self.morph_action.triggered.connect(self.open_morph_transform_widget)
+        self.contour_action.triggered.connect(self.open_contour_widget)
 
         # connect the camera feed to the process slot
         self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
@@ -234,3 +239,26 @@ class SegmentationApp(QMainWindow):
         self.worker.erode_iterations = self.morph_widget.erode_iterations
         self.worker.erode_kernel_size = self.morph_widget.erosion_gauge.current_value
         self.worker.dilate_kernel_size = self.morph_widget.dilation_gauge.current_value
+
+
+    def open_contour_widget(self):
+        dock = QDockWidget("Contour Tool", self)
+        
+        self.contour_widget = ContoursWidget(parent=dock)
+
+        self.contour_widget.value_changed.connect(self.update_contour_settings)
+
+        dock.setWidget(self.contour_widget)
+        dock.setFloating(True)
+        dock.setAttribute(Qt.WA_DeleteOnClose, True)
+        dock.show()
+        self.external_windows.append(dock)
+
+        self.contour_worker = self.contour_widget.worker
+
+        self.worker.processed.connect(self.contour_worker.process_data)
+
+        self.contour_widget.start_worker()
+
+    def update_contour_settings(self):
+        print("Updating contour settings")
