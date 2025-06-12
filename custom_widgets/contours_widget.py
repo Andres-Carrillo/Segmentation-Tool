@@ -40,24 +40,32 @@ class ContoursWidget(QWidget):
         self.label = QLabel(self)
         retrieval_mode = QComboBox()
         approximation_method = QComboBox()
+        bbox_mode = QComboBox()
 
         retrieval_mode.addItems(["External Only", "Full List", "Tree Mode", "Two Level with Holes"])
         approximation_method.addItems(["Simple", "Full","Teh Chin L1","Teh Chin KCOS"])
 
+        bbox_mode.addItems(["None","Bounding Box", "Rotated Box", "Minimum Enclosing Circle", "Ellipse","Convex Hull"])
+
         retrieval_mode.currentIndexChanged.connect(self.set_retrieval_mode)
         approximation_method.currentIndexChanged.connect(self.set_approximation_method)
+        bbox_mode.currentIndexChanged.connect(self.set_bbox_mode)
 
         self.retrieval_mode = retrieval_mode
         self.approximation_method = approximation_method
-        
+        self.bbox_mode = bbox_mode
+
         label_layout.addWidget(QLabel("Retrieval Mode:"), alignment=Qt.AlignCenter)
         options_layout.addWidget(self.retrieval_mode)
         
         label_layout.addWidget(QLabel("Approximation Method:"), alignment=Qt.AlignCenter)
         options_layout.addWidget(self.approximation_method)
-    
+
+        label_layout.addWidget(QLabel("Bounding Box Mode:"), alignment=Qt.AlignCenter)
+        options_layout.addWidget(self.bbox_mode)
+
         self.label.setAlignment(Qt.AlignCenter)
-    
+
         self.canvas.fill(Qt.black)
         self.label.setPixmap(self.canvas)
 
@@ -68,7 +76,6 @@ class ContoursWidget(QWidget):
 
 
     def set_retrieval_mode(self, index):
-        print(f"Retrieval mode changed to index: {index}")
         retrieval_modes = [cv.RETR_EXTERNAL, cv.RETR_LIST, cv.RETR_TREE, cv.RETR_CCOMP]
 
         if 0 <= index < len(retrieval_modes):
@@ -76,11 +83,14 @@ class ContoursWidget(QWidget):
 
 
     def set_approximation_method(self, index):
-        print(f"Approximation method changed to index: {index}")
         approximation_methods = [cv.CHAIN_APPROX_SIMPLE, cv.CHAIN_APPROX_NONE, cv.CHAIN_APPROX_TC89_L1, cv.CHAIN_APPROX_TC89_KCOS]
 
         if 0 <= index < len(approximation_methods):
             self.worker.approximation_method = approximation_methods[index]
+
+
+    def set_bbox_mode(self, index):
+        self.worker.bounding_boxes_mode = index
 
 
     def start_worker(self):
@@ -90,17 +100,14 @@ class ContoursWidget(QWidget):
         self.running = True
 
     def update_canvas(self, qimage):
-        print("Updating canvas with new image.")
 
         if self.running:    
             if qimage is not None:
                 self.canvas = QPixmap.fromImage(qimage)
-
                 self.label.setPixmap(self.canvas)
             else:
                 self.start_worker()
-                print("Received None image, not updating canvas.")
-        
+
         self.value_changed.emit()
 
     def stop_worker(self):
@@ -110,4 +117,3 @@ class ContoursWidget(QWidget):
         self.worker.deleteLater()
         self.thread.deleteLater()
         self.running = False
-        print("Worker and thread stopped and cleaned up.")
