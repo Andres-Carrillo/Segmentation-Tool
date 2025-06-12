@@ -261,4 +261,4 @@ class SegmentationApp(QMainWindow):
         self.contour_widget.start_worker()
 
     def update_contour_settings(self):
-        print("Updating contour settings")
+       pass
