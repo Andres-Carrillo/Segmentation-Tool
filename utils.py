@@ -447,3 +447,45 @@ def flip_angle(angle):
     else:
         angle = 360 + angle
     return angle
+
+
+
+
+def non_max_suppression(boxes, overlapThresh):
+    """
+    Perform non-maximum suppression on a list of bounding boxes.
+
+    Args:
+        boxes (list): List of bounding boxes in the format (x, y, w, h).
+        overlapThresh (float): Overlap threshold for suppression.
+
+    Returns:
+        list: List of bounding boxes after non-maximum suppression.
+    """
+    if len(boxes) == 0:
+        return []
+
+    # Convert boxes to numpy array
+    for i, box_a in enumerate(boxes):
+        area_a = box_a[2] * box_a[3]
+        for j,box_b in enumerate(boxes,start=i+1):
+            area_b = box_b[2] * box_b[3]
+            # Calculate intersection area
+            x1 = max(box_a[0], box_b[0])
+            y1 = max(box_a[1], box_b[1])
+            x2 = min(box_a[0] + box_a[2], box_b[0] + box_b[2])
+            y2 = min(box_a[1] + box_a[3], box_b[1] + box_b[3])
+            w = max(0, x2 - x1)
+            h = max(0, y2 - y1)
+            intersection = w * h
+
+            union = area_a + area_b - intersection
+
+            iou_score = intersection / union if union > 0 else 0
+            # Suppress box_b if IoU is greater than the threshold
+            if iou_score > overlapThresh:
+                # Suppress box_b
+                boxes[j] = (0, 0, 0, 0)
+            # Calculate IoU
+           
+ 
