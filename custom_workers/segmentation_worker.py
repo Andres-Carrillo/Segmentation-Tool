@@ -151,9 +151,6 @@ class SegmentationWorker(BaseWorker):
 
             self.data = data
 
-            # self.processed.emit(data)
-            # self.finished.emit()
-
     
     def base_segmentation(self, image):
         converted_image = cv.cvtColor(image, self.color_space)    
