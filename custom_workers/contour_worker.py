@@ -16,7 +16,9 @@ class ContourWorker(BaseWorker):
         self.min_cnt_area = min_cnt_area
         self.max_cnt_area = max_cnt_area
         self.contour_color = contour_color
+        self.bounding_box_color = (0, 0, 255)  # Default color for bounding boxes
         self.contour_thickness = contour_thickness
+        self.bounding_boxes_mode = 0 # 0:None 1:Bounding Box, 2:Rotated Box, 3:Minimum Enclosing Circle, 4:Ellipse, 5:Line, 6:Convex Hull
 
 
     # data is a 2d image mask
@@ -25,24 +27,23 @@ class ContourWorker(BaseWorker):
             self.processed.emit(None)
             self.finished.emit()
         else:
-            print("type of data:", type(data))
-            # print("shape of data:", data.shape)
             self.input_image = data
             self.input_image = qimage_to_cv_image(data)
-            print("type of input_image after conversion:", type(self.input_image))
-            print("shape of input_image after conversion:", self.input_image.shape)
+
             self.input_image = cv.cvtColor(self.input_image, cv.COLOR_RGBA2GRAY)
             self._find_contours()
+
             self.input_image = cv.cvtColor(self.input_image, cv.COLOR_GRAY2BGR)
             self._draw_contours()
-            # self.input_image = cv.cvtColor(self.input_image, cv.COLOR_GRAY2RGBA)
+
+            if self.bounding_boxes_mode > 0:
+                self._draw_bounding_boxes()
+
             self.processed.emit(cv_image_to_qimage(self.output_image))
             self.finished.emit()
 
     def _find_contours(self):
         if self.input_image is not None:
-            print("type of input_image:", type(self.input_image))
-            print("shape of input_image:", self.input_image.shape)
             contours, hierarchy = cv.findContours(self.input_image, self.retrieval_mode, self.approximation_method)
             self.contours = contours
             self.hierarchy = hierarchy
@@ -54,5 +55,42 @@ class ContourWorker(BaseWorker):
     def _draw_contours(self):
         self.output_image = np.zeros_like(self.input_image)
         if self.input_image is not None:
-            cv.drawContours(self.output_image, self.contours, -1, self.contour_color, 1)
-            print("Contours drawn on the image.")
+            cv.drawContours(self.output_image, self.contours, -1, self.contour_color, self.contour_thickness)
+
+
+    def _draw_bounding_boxes(self):
+         # 0:None 1:Bounding Box, 2:Rotated Box, 3:Minimum Enclosing Circle, 4:Ellipse, 5:Line, 6:Convex Hull
+        if self.bounding_boxes_mode == 1:
+            for cnt in self.contours:
+                x, y, w, h = cv.boundingRect(cnt)
+                cv.rectangle(self.output_image, (x, y), (x + w, y + h), self.bounding_box_color, self.contour_thickness)
+
+        elif self.bounding_boxes_mode == 2:
+            for cnt in self.contours:
+                rect = cv.minAreaRect(cnt)
+                box = cv.boxPoints(rect)
+                # box = np.int8(box)
+                box = box.astype(np.int32).reshape((-1, 1, 2))
+                if box.shape[0] > 0:
+                    cv.drawContours(self.output_image, [box], 0, self.bounding_box_color, self.contour_thickness)
+
+
+        elif self.bounding_boxes_mode == 3:
+            for cnt in self.contours:
+                (x, y), radius = cv.minEnclosingCircle(cnt)
+                center = (int(x), int(y))
+                radius = int(radius)
+                cv.circle(self.output_image, center, radius, self.bounding_box_color, self.contour_thickness)
+        elif self.bounding_boxes_mode == 4:
+            for cnt in self.contours:
+                if len(cnt) < 5:
+                    continue
+                ellipse = cv.fitEllipse(cnt)
+
+                if ellipse[1][0] > 0 and ellipse[1][1] > 0:  # Check if the axes are valid
+                    cv.ellipse(self.output_image, ellipse, self.bounding_box_color, self.contour_thickness)
+        elif self.bounding_boxes_mode == 5:
+            for cnt in self.contours:
+                hull = cv.convexHull(cnt)
+                cv.drawContours(self.output_image, [hull], 0, self.bounding_box_color, self.contour_thickness)
+
