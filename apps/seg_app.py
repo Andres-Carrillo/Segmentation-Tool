@@ -11,6 +11,7 @@ from custom_widgets.video_widget import VideoWidget
 from custom_widgets.class_list_widget import ClassListWidget
 from custom_widgets.morph_transform_widget import MorphTransformWidget
 from custom_widgets.contours_widget import ContoursWidget
+from custom_widgets.backgrnd_sub_widget import BackgroundSubWidget
 
 class SegmentationApp(QMainWindow):
     def __init__(self):
@@ -41,7 +42,6 @@ class SegmentationApp(QMainWindow):
         self.camera_feed.image_label.setStyleSheet("background-color: black")
         self.class_list_widget.setFixedSize(100,600)
 
-
         # ==================== add items to the color space combo box ========================
         self.color_spaces.addItem("RGB",cv.COLOR_BGR2RGB)
         self.color_spaces.addItem("HSV",cv.COLOR_BGR2HSV)
@@ -50,18 +50,17 @@ class SegmentationApp(QMainWindow):
         self.color_spaces.addItem("LAB",cv.COLOR_BGR2LAB)
         self.color_spaces.addItem("YCrCb",cv.COLOR_BGR2YCrCb)
 
+
         # ==================== layout ========================
         options_layout.addWidget(self.color_spaces)
-
         container.addWidget(self.seg_tools,0,0)
+
         container.addLayout(options_layout,1,0)
-        
         layout.addLayout(container)
         layout.addWidget(self.class_list_widget)
         layout.addWidget(self.camera_feed)
         layout.addWidget(self.results_widget)
         
-        # self.setLayout(layout)
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
         
@@ -70,10 +69,12 @@ class SegmentationApp(QMainWindow):
     def _init_slots(self):
         self.morph_action = QAction("Morph Transform Tool", self)
         self.contour_action = QAction("Contour Tool", self)
+        self.background_subtraction_action = QAction("Background Subtraction Tool", self)
         
         self.setWindowTitle("Segmentation App")
         self.tool_menu.addAction(self.morph_action)
         self.tool_menu.addAction(self.contour_action)
+        self.tool_menu.addAction(self.background_subtraction_action)
                 # ==================== connect signals to slots ========================
             # connect the color space combo box to the change color space slot
         self.color_spaces.currentIndexChanged.connect(self.change_color_space)
@@ -90,6 +91,7 @@ class SegmentationApp(QMainWindow):
 
         self.morph_action.triggered.connect(self.open_morph_transform_widget)
         self.contour_action.triggered.connect(self.open_contour_widget)
+        self.background_subtraction_action.triggered.connect(self.open_background_subtraction_widget)
 
         # connect the camera feed to the process slot
         self.camera_feed.new_frame_emitter.new_frame.connect(self.worker.process)
@@ -246,8 +248,6 @@ class SegmentationApp(QMainWindow):
         
         self.contour_widget = ContoursWidget(parent=dock)
 
-        self.contour_widget.value_changed.connect(self.update_contour_settings)
-
         dock.setWidget(self.contour_widget)
         dock.setFloating(True)
         dock.setAttribute(Qt.WA_DeleteOnClose, True)
@@ -256,9 +256,21 @@ class SegmentationApp(QMainWindow):
 
         self.contour_worker = self.contour_widget.worker
 
-        self.worker.processed.connect(self.contour_worker.process_data)
+        self.worker.processed.connect(self.contour_worker.process)
 
         self.contour_widget.start_worker()
 
-    def update_contour_settings(self):
-       pass
+    def open_background_subtraction_widget(self):
+        dock = QDockWidget("Background Subtraction Tool", self)
+        self.background_sub_widget = BackgroundSubWidget(parent=dock)
+        dock.setWidget(self.background_sub_widget)
+        dock.setFloating(True)
+        dock.setAttribute(Qt.WA_DeleteOnClose, True)
+        dock.show()
+        self.external_windows.append(dock)
+
+        self.background_sub_worker = self.background_sub_widget.worker
+
+        self.camera_feed.new_frame_emitter.new_frame.connect(self.background_sub_worker.process)
+
+        self.background_sub_widget.start_worker()
