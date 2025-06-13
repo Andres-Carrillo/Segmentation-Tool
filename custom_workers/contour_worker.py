@@ -1,5 +1,5 @@
 from custom_workers.segmentation_worker import BaseWorker
-from utils import cv_image_to_qimage, qimage_to_cv_image
+from utils import cv_image_to_qimage, qimage_to_cv_image, non_max_suppression
 import cv2 as cv
 import numpy as np
 
@@ -20,7 +20,6 @@ class ContourWorker(BaseWorker):
         self.contour_thickness = contour_thickness
         self.bounding_boxes_mode = 0 # 0:None 1:Bounding Box, 2:Rotated Box, 3:Minimum Enclosing Circle, 4:Ellipse, 5:Line, 6:Convex Hull
 
-
     # data is a 2d image mask
     def process_data(self, data):
         if data is None:
@@ -39,8 +38,7 @@ class ContourWorker(BaseWorker):
             if self.bounding_boxes_mode > 0:
                 self._draw_bounding_boxes()
 
-            self.processed.emit(cv_image_to_qimage(self.output_image))
-            self.finished.emit()
+            self.data = cv_image_to_qimage(self.output_image)
 
     def _find_contours(self):
         if self.input_image is not None:
@@ -51,29 +49,32 @@ class ContourWorker(BaseWorker):
             if self.filter_contours:
                 self.contours = [cnt for cnt in self.contours if self.min_cnt_area <= cv.contourArea(cnt) <= self.max_cnt_area]
 
-
     def _draw_contours(self):
         self.output_image = np.zeros_like(self.input_image)
         if self.input_image is not None:
             cv.drawContours(self.output_image, self.contours, -1, self.contour_color, self.contour_thickness)
 
-
     def _draw_bounding_boxes(self):
+
          # 0:None 1:Bounding Box, 2:Rotated Box, 3:Minimum Enclosing Circle, 4:Ellipse, 5:Line, 6:Convex Hull
         if self.bounding_boxes_mode == 1:
+            boxes = []
             for cnt in self.contours:
                 x, y, w, h = cv.boundingRect(cnt)
-                cv.rectangle(self.output_image, (x, y), (x + w, y + h), self.bounding_box_color, self.contour_thickness)
+                boxes.append((x, y, w, h))
+   
+            for (x, y, w, h) in boxes:
+                if w > 0 and h > 0:  # Ensure valid dimensions
+                    cv.rectangle(self.output_image, (x, y), (x + w, y + h), self.bounding_box_color, self.contour_thickness)
 
         elif self.bounding_boxes_mode == 2:
             for cnt in self.contours:
                 rect = cv.minAreaRect(cnt)
                 box = cv.boxPoints(rect)
-                # box = np.int8(box)
                 box = box.astype(np.int32).reshape((-1, 1, 2))
+                
                 if box.shape[0] > 0:
                     cv.drawContours(self.output_image, [box], 0, self.bounding_box_color, self.contour_thickness)
-
 
         elif self.bounding_boxes_mode == 3:
             for cnt in self.contours:
@@ -81,14 +82,17 @@ class ContourWorker(BaseWorker):
                 center = (int(x), int(y))
                 radius = int(radius)
                 cv.circle(self.output_image, center, radius, self.bounding_box_color, self.contour_thickness)
+        
         elif self.bounding_boxes_mode == 4:
             for cnt in self.contours:
                 if len(cnt) < 5:
                     continue
+                
                 ellipse = cv.fitEllipse(cnt)
 
                 if ellipse[1][0] > 0 and ellipse[1][1] > 0:  # Check if the axes are valid
                     cv.ellipse(self.output_image, ellipse, self.bounding_box_color, self.contour_thickness)
+
         elif self.bounding_boxes_mode == 5:
             for cnt in self.contours:
                 hull = cv.convexHull(cnt)
