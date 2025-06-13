@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget,QLabel,QImage
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget,QLabel
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 from custom_workers.camera_worker import CameraWorker
