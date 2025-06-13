@@ -6,6 +6,8 @@ Current Features:
  
  Mulit-Class Color Segmentation:
     
+[color_space_options.webm](https://github.com/user-attachments/assets/0d967b6d-634c-4968-8207-c25b20f10ae0)
+
      Color Space Modes:
        
        i.   RGB.
