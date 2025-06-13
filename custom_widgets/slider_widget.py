@@ -5,7 +5,7 @@ from utils import in_bounds, clip_value,in_circle
 class Slider(QtWidgets.QWidget):
     value_changed = QtCore.pyqtSignal()
 
-    def __init__(self,parent=None, min_value=0, max_value=100, handle_color=QtGui.QColor('gray'), track_bar_color=QtGui.QColor('red'), background_color=QtGui.QColor('black'),  *args, **kwargs):
+    def __init__(self,parent=None, min_value=0, max_value=100, value = 50,handle_color=QtGui.QColor('gray'), track_bar_color=QtGui.QColor('red'), background_color=QtGui.QColor('black'),  *args, **kwargs):
         super().__init__(parent=parent,*args, **kwargs)
         self.setMouseTracking(True)
 
@@ -20,7 +20,7 @@ class Slider(QtWidgets.QWidget):
         self.bckgrnd_color = background_color
         self.handle_color = handle_color
 
-        self.cur_value = 0
+        self.cur_value = clip_value(value, self._range[0], self._range[1])
 
 
         self.setSizePolicy(
