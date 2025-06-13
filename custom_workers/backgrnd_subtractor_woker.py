@@ -5,28 +5,28 @@ import numpy as np
 
 
 class BackgroundSubtractorWorker(BaseWorker):
-    def __init__(self, method=cv.createBackgroundSubtractorMOG2(),):
+    def __init__(self, method=cv.createBackgroundSubtractorMOG2(),detect_shadows=True,
+                                                  history=500, dist_threshold=16):
         super().__init__()
         self.input_image = None
         self.method = method
         self.output_image = None
-        self.should_detect_shadows = True
-        self.method_history = 500  # Default history for MOG2
-        self.method_dist_threshold = 400 if self.method == cv.createBackgroundSubtractorKNN() else 16  # Default threshold for KNN
+        self.should_detect_shadows = detect_shadows
+        self.method_history = history
+        self.method_dist_threshold = dist_threshold
 
     def process_data(self, data):
         if data is None:
-            self.processed.emit(None)
-            self.finished.emit()
+            self.data
         else:
             self.input_image = qimage_to_cv_image(data)
             self._apply_background_subtraction()
-            self.processed.emit(cv_image_to_qimage(self.output_image))
-            self.finished.emit()
+            self.data = cv_image_to_qimage(self.output_image)
 
     def _apply_background_subtraction(self):
         if self.input_image is not None:
             fg_mask = self.method.apply(self.input_image)
+            fg_mask = cv.morphologyEx(fg_mask, cv.MORPH_OPEN, np.ones((3, 3), np.uint8))
             self.output_image = cv.cvtColor(fg_mask, cv.COLOR_GRAY2BGR)
 
     def set_method(self, method):
