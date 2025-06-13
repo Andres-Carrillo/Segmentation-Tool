@@ -1,9 +1,8 @@
 # this will be a widget used to contour the contours displayed in the output window
 from custom_workers.contour_worker import ContourWorker
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QDoubleSpinBox,QHBoxLayout,QComboBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel,QHBoxLayout,QComboBox
 from PyQt5.QtCore import pyqtSignal, Qt, QThread
-from PyQt5.QtGui import QPainter, QColor, QPixmap, QImage
-from utils import qimage_to_cv_image, cv_image_to_qimage
+from PyQt5.QtGui import QPixmap
 import cv2 as cv
 
 class ContoursWidget(QWidget):
@@ -105,8 +104,8 @@ class ContoursWidget(QWidget):
             if qimage is not None:
                 self.canvas = QPixmap.fromImage(qimage)
                 self.label.setPixmap(self.canvas)
-            else:
-                self.start_worker()
+        else:
+            self.start_worker()
 
         self.value_changed.emit()
 
