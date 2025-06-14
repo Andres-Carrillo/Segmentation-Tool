@@ -33,3 +33,4 @@ class OutputWidget(QWidget):
         layout.addWidget(self.save_masks, 2, 0)
 
         self.setLayout(layout)
+        self.setFixedSize(640, 600)
