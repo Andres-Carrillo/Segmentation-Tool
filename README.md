@@ -5,8 +5,10 @@ Multi-threading is handled by Qthreads to ensure real-time processing of video.
 Current Features:
  
  Mulit-Class Color Segmentation:
-    
-[color_space_options.webm](https://github.com/user-attachments/assets/0d967b6d-634c-4968-8207-c25b20f10ae0)
+ 
+[color_space_demo.webm](https://github.com/user-attachments/assets/e30787db-da54-4f49-a868-c6e45f6be96c)
+
+
 
      Color Space Modes:
        
@@ -17,7 +19,8 @@ Current Features:
        v.   YUV.
        vi   LUV.
        
-   
+ [demo.webm](https://github.com/user-attachments/assets/1f767eb1-f190-463b-a6c9-4dc58865fa30)
+ 
  Morphological Operations:
  
     Operation Options:
